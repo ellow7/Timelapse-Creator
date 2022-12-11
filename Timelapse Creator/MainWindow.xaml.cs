@@ -32,17 +32,21 @@ namespace Timelapse_Creator
             InitializeComponent();
             try
             {
-                string sourceFolder = @"D:\Timelapse für Axel\raw";
+                #region Settings
+                string sourceFolder = @"D:\Timelapse für Axel\raw";//this is where the images lie. I assume that in this folder you have folders for each day with the images of this day (e.g. \2022-12-11\08-00.jpg
                 //string sourceFolder = @"D:\Timelapse für Axel\testfolder";
-                int everyNthImage = 20;//every nth image is extracted to the working folder
-                bool generateWorkingFolder = false;
-                bool generateVideo = true;
+                int everyNthImage = 20;//only every nth image is extracted to the working folder
+                bool preprocessImages = false;//this will sort out the images to a working folder (sourceFolder_working). sometimes you only want to generate the output or the video and not both
+                bool generateTimelapse = false;//this takes all images of the working folder and creates a timelapse
+                int timelapseResolutionX = 1920;//resolution of the timelapse
+                int timelapseResolutionY = 1080;
+                int timelapseFPS = 60;//take an educated guess what this is
+                #endregion
 
-                string workingFolder = new DirectoryInfo(sourceFolder).FullName.Trim('\\') + "_working\\";
+                string workingFolder = new DirectoryInfo(sourceFolder).FullName.Trim('\\') + "_working\\";//where the processed images go
 
-                if (generateWorkingFolder)
+                if (preprocessImages)
                 {
-
                     if (!Directory.Exists(sourceFolder))
                         throw new Exception($"Directory {sourceFolder} does not exist.");
                     if (Directory.Exists(workingFolder))
@@ -55,29 +59,27 @@ namespace Timelapse_Creator
                     Directory.CreateDirectory(workingFolder);
 
                     log("Getting files and calculating brightnesses.");
-                    var dirInfoTXT = System.IO.Path.Combine(workingFolder, "dirinfo.csv");
-                    if (System.IO.File.Exists(dirInfoTXT))
-                        System.IO.File.Delete(dirInfoTXT);
+                    var dirInfoTXT = System.IO.Path.Combine(workingFolder, "dirinfo.csv");//statistics of the folders. here you can check how many good and bad images you have for each folder
+                    List<string> dirInfos = new List<string> { "Directory;OK Images;Gray Images;Too Dark Images;" };//statistics of the folders
 
                     List<float> brights = new List<float>();//debug
-
-                    List<string> directories = Directory.GetDirectories(sourceFolder).ToList();
-                    List<string> dirInfos = new List<string> { "Directory;OK Images;Gray Images;Too Dark Images;" };
+                    List<string> directories = Directory.GetDirectories(sourceFolder).ToList();//these will be processed
 
                     Stopwatch sw = new Stopwatch();
                     sw.Start();
                     int i = 0;
-                    Parallel.ForEach(directories, new ParallelOptions { MaxDegreeOfParallelism = 5 },
-                        dir =>
+
+                    Parallel.ForEach(directories, new ParallelOptions { MaxDegreeOfParallelism = 5 }, dir =>
                     {
                         try
                         {
+                            //Counter for statistics
                             int grayImages = 0;
                             int okImages = 0;
                             int tooDarkImages = 0;
-                            List<string> okFiles = new List<string>();
-                            List<string> files = Directory.GetFiles(dir, "*.jpg", SearchOption.TopDirectoryOnly).OrderBy(R => R).ToList();
-                            List<bool> BrightImages = new List<bool> { false, false, false };
+                            List<string> okFiles = new List<string>();//filenames of good images
+                            List<string> files = Directory.GetFiles(dir, "*.jpg", SearchOption.TopDirectoryOnly).OrderBy(R => R).ToList();//these will be processed
+                            List<bool> BrightImageMarker = new List<bool> { false, false, false };//floating list telling us the status of the last images processed - true is a ok image, false a dark image
                             for (int j = 0; j < files.Count; j++)
                             {
                                 var img = new Bitmap(files.ElementAt(j));
@@ -88,53 +90,52 @@ namespace Timelapse_Creator
                                 brights.Add((float)bright);
 
                                 if (bright > 0.495 && bright < 0.505)
-                                    grayImages++; //gray image
+                                    grayImages++; //gray image (may occur with motion eye os when the connection to the cam broke down)
                                 else if (bright < 0.2)
                                 {
-                                    if (BrightImages.All(x => x == true))//we already had some ok images in a row and now the first dark - this is probably in the afternoon -> skip the rest
+                                    if (BrightImageMarker.All(x => x == true))//we already had some ok images in a row and now the first dark - this is probably in the afternoon -> skip the rest. disable this if you have one large folder with all images.
                                     {
-                                        tooDarkImages += files.Count - j;
+                                        tooDarkImages += files.Count - j;//add the missing files to the counter
                                         break;
                                     }
                                     tooDarkImages++; //too dark
-                                    BrightImages.Add(false);
-                                    BrightImages.Remove(BrightImages.First());
+                                    BrightImageMarker.Add(false);
+                                    BrightImageMarker.Remove(BrightImageMarker.First());
                                 }
                                 else
                                 {
-                                    BrightImages.Add(true);
-                                    BrightImages.Remove(BrightImages.First());
-                                    okImages++;
+                                    okImages++;//bright image
+                                    BrightImageMarker.Add(true);
+                                    BrightImageMarker.Remove(BrightImageMarker.First());
                                     okFiles.Add(files.ElementAt(j));
                                 }
                             }
-                            Parallel.ForEach(EveryNthElement(okFiles, everyNthImage), file => //every nth image
+                            Parallel.ForEach(EveryNthElement(okFiles, everyNthImage), file => //only every nth image
                             {
                                 var FI = new FileInfo(file);
                                 System.IO.File.Copy(file, System.IO.Path.Combine(workingFolder, FI.Name));
                             });
 
-                            var elapsed = sw.ElapsedMilliseconds * directories.Count / (i + 1) - sw.ElapsedMilliseconds;
-                            string dirInfo = $"Finished {dir}. ETA: {String.Format("{0:0.00}", elapsed / 1000 / 60.0, 2)} min";
                             dirInfos.Add($"{dir};{okImages};{grayImages};{tooDarkImages};");
-                            i++;
-
+                            var elapsed = sw.ElapsedMilliseconds * directories.Count / (i + 1) - sw.ElapsedMilliseconds;
+                            string dirInfo = $"Finished {dir}. {i} of {directories.Count} directories processed. ETA: {String.Format("{0:0.00}", elapsed / 1000 / 60.0, 2)} min";//estimate duration
                             log(dirInfo);
+                            i++;
                         }
                         catch (Exception ex)
                         {
                             log($"Exception {dir}:\r\n{ex.Message}");
                         }
                     });
-                    System.IO.File.WriteAllText(dirInfoTXT, string.Join("\r\n ", dirInfos));
+                    System.IO.File.WriteAllText(dirInfoTXT, string.Join("\r\n ", dirInfos));//write statistics
                     log("Finished files and calculating brightnesses.");
                 }
 
-                if (generateVideo)
+                if (generateTimelapse)
                 {
                     log("Creating video.");
 
-                    var outputfile = System.IO.Path.Combine(workingFolder, "Timelapse.mp4");
+                    var outputfile = System.IO.Path.Combine(workingFolder, "Timelapse.mp4");//this is the timelapse. duh.
                     if (System.IO.File.Exists(outputfile))
                         System.IO.File.Delete(outputfile);
 
@@ -176,30 +177,24 @@ namespace Timelapse_Creator
                     //    //Process.Start(cmd);
                     #endregion
 
-                    //https://ffmpeg.org/download.html
-                    //https://www.youtube.com/watch?v=WDOupC5dyIQ&ab_channel=IrisClasson
+                    //Probably needs https://ffmpeg.org/download.html installed
+                    //Code snippets from https://www.youtube.com/watch?v=WDOupC5dyIQ&ab_channel=IrisClasson
                     Stopwatch sw = new Stopwatch();
                     sw.Start();
-                    using (var vw = new VideoFileWriter())
+                    using (var vw = new VideoFileWriter())//start writing video
                     {
-                        //vw.Open(outputfile, 1920, 1080, 60, VideoCodec.MPEG4);
-                        vw.Open(outputfile, 1280, 720, 60, VideoCodec.MPEG4);
-                        var files = Directory.GetFiles(workingFolder, "*.jpg", SearchOption.TopDirectoryOnly).OrderBy(R => R).ToList();
-                        files = EveryNthElement(files, 3);
-                        //foreach (var file in files)
+                        vw.Open(outputfile, timelapseResolutionX, timelapseResolutionY, timelapseFPS, VideoCodec.MPEG4);
+                        var files = Directory.GetFiles(workingFolder, "*.jpg", SearchOption.TopDirectoryOnly).OrderBy(R => R).ToList();//get all images
+                        //files = EveryNthElement(files, 3);//if you want to skip some images here
                         for (int i = 0; i < files.Count; i++)
                         {
-                            var elapsed = sw.ElapsedMilliseconds * files.Count / (i + 1) - sw.ElapsedMilliseconds;
-                            log($"{i} of {files.Count} images processed. ETA: {String.Format("{0:0.00}", elapsed / 1000 / 60.0, 2)} min");
-                            Bitmap image = Bitmap.FromFile(files.ElementAt(i)) as Bitmap;
-
-                            Bitmap resized = new Bitmap(image, new System.Drawing.Size(1280, 720));
-
-                            vw.WriteVideoFrame(resized);
-                            image.Dispose();
+                            Bitmap image = Bitmap.FromFile(files.ElementAt(i)) as Bitmap;//read the original image
+                            Bitmap resized = new Bitmap(image, new System.Drawing.Size(timelapseResolutionX, timelapseResolutionY));//resize it - ffmpeg just cuts it if you don't
+                            vw.WriteVideoFrame(resized);//write it to the video
+                            image.Dispose();//cleanup
                             resized.Dispose();
-                            //if (i > 500)//debug
-                            //    break;
+                            var elapsed = sw.ElapsedMilliseconds * files.Count / (i + 1) - sw.ElapsedMilliseconds;
+                            log($"{i} of {files.Count} images processed. ETA: {String.Format("{0:0.00}", elapsed / 1000 / 60.0, 2)} min");//estimate duration
                         }
                         vw.Close();
                     }
@@ -207,24 +202,21 @@ namespace Timelapse_Creator
 
                 log("Finished.");
 
-                ;
-
-
-
-
-
-
-
+                //No discussion. Just get it done.
+                Process.GetCurrentProcess().Kill();
+                Application.Current.Shutdown();
+                this.Close();
+                Environment.Exit(0);
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Creating Timelapse\r\n" + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-
-
-
-
         }
+        /// <summary>
+        /// Log message to console with timestamp.
+        /// </summary>
+        /// <param name="msg"></param>
         private void log(string msg)
         {
             Console.WriteLine(DateTime.Now.ToLongTimeString() + " - " + msg);
