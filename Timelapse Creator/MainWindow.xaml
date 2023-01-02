@@ -5,8 +5,72 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Timelapse_Creator"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        
-    </Grid>
+        Title="Timelapse Creator" Height="450" Width="1205" FontFamily="Consolas">
+    <DockPanel>
+        <StackPanel>
+            <StackPanel>
+                <Label Content="1) Preprocess" FontSize="20" FontWeight="Bold"/>
+                <DockPanel>
+                    <Label Content="Source Folder:" Width="120"/>
+                    <TextBox x:Name="TBPreprocessSourceFolder" Text="C:/Timelapse" Width="200" TextChanged="TBPreprocessSourceFolder_TextChanged" />
+                    <Button x:Name="BTBrowseSourceFolder" Width="50" Content="browse" Click="BTBrowseSourceFolder_Click"/>
+                </DockPanel>
+                <DockPanel>
+                    <Label Content="Working Folder:" Width="120"/>
+                    <TextBox x:Name="TBPreprocessWorkingFolder" Text="C:/Timelapse_working" Width="200" IsReadOnly="True" Background="LightGray"/>
+                    <Button x:Name="BTPreprocessOpenWorkingFolder" Content="open" Width="50" Click="BTOpenWorkingFolder_Click"/>
+                </DockPanel>
+                <DockPanel>
+                    <Label Content="Every Nth Image:" Width="120"/>
+                    <TextBox x:Name="TBPreprocessEveryNthImage" Text="1" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput"/>
+                </DockPanel>
+                <DockPanel>
+                    <Label Content="Bright Treshold:" Width="120"/>
+                    <TextBox x:Name="TBPreprocessBrightTreshold" Text="0.2" Width="250" PreviewTextInput="TextBox_Float_PreviewTextInput"/>
+                </DockPanel>
+                <DockPanel>
+                    <Button x:Name="BTPreprocessPreprocess" Content="Preprocess" Padding="3" Click="BTPreprocessPreprocess_Click"/>
+                </DockPanel>
+            </StackPanel>
+            <Label Height="40"/>
+            <StackPanel>
+                <Label Content="2) Create Timelapse" FontSize="20" FontWeight="Bold"/>
+                <DockPanel>
+                    <Label Content="Working Folder:" Width="120"/>
+                    <TextBox x:Name="TBTimelapseWorkingFolder" Text="C:/Working" Width="200" IsReadOnly="True" Background="LightGray"/>
+                    <Button x:Name="BTTimelapseOpenWorkingFolder" Content="open" Width="50" Click="BTOpenWorkingFolder_Click"/>
+                </DockPanel>
+                <DockPanel>
+                    <Label Content="Timelapse:" Width="120"/>
+                    <TextBox x:Name="TBTimelapse" Text="C:/Timelapse_working/Timelapse.mp4" Width="200" IsReadOnly="True" Background="LightGray"/>
+                    <Button x:Name="BTTimelapseOpenTimelapse" Content="open" Width="50" Click="BTTimelapseOpenTimelapse_Click"/>
+                </DockPanel>
+                <DockPanel>
+                    <Label Content="Every Nth Image:" Width="120"/>
+                    <TextBox x:Name="TBTimelapseEveryNthImage" Text="100" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput"/>
+                </DockPanel>
+                <DockPanel>
+                    <Label Content="Resolution X:" Width="120"/>
+                    <TextBox x:Name="TBTimelapseResolutionX" Text="1920" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput"/>
+                </DockPanel>
+                <DockPanel>
+                    <Label Content="Resolution Y:" Width="120"/>
+                    <TextBox x:Name="TBTimelapseResolutionY" Text="1080" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput"/>
+                </DockPanel>
+                <DockPanel>
+                    <Label Content="FPS:" Width="120"/>
+                    <TextBox x:Name="TBTimelapseFPS" Text="60"  Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput"/>
+                </DockPanel>
+                <DockPanel>
+                    <Button x:Name="BTTimelapseCreateTimelapse" Content="Create Timelapse" Padding="3" Click="BTTimelapseCreateTimelapse_Click"/>
+                </DockPanel>
+            </StackPanel>
+        </StackPanel>
+        <Label Width="100"/>
+        <StackPanel>
+            <Label Content="ETC" FontSize="20" FontWeight="Bold"/>
+            <Label Content="Log:"/>
+            <TextBox x:Name="TBLog" Height="200" TextWrapping="Wrap" xml:space="preserve" AcceptsReturn="True" VerticalScrollBarVisibility="Visible" IsReadOnly="True" Background="LightGray"/>
+        </StackPanel>
+    </DockPanel>
 </Window>
