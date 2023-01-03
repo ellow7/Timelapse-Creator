@@ -14,7 +14,7 @@ Preprocess<br>
 7200 images (5 days)<br>
 1min 20s<br>
 <br>
-Timelapse<br>
+Timelapse of the preprocessed images<br>
 2761 images<br>
 1min 40s<br>
 
