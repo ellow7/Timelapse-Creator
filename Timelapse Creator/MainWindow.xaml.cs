@@ -86,6 +86,7 @@ namespace Timelapse_Creator
                 return;
             TBPreprocessWorkingFolder.Text = "";
             TBTimelapseWorkingFolder.Text = "";
+            TBPreprocessInfoFile.Text = "";
             TBTimelapse.Text = "";
             var folder = TBPreprocessSourceFolder.Text;
             if (!new DirectoryInfo(folder).Exists)
@@ -93,8 +94,10 @@ namespace Timelapse_Creator
 
             string workingFolder = new DirectoryInfo(folder).FullName.Trim('\\') + "_working\\";
             string timelapseFile = System.IO.Path.Combine(workingFolder, "Timelapse.mp4");
+            string infoFile = System.IO.Path.Combine(workingFolder, "Info.csv");
             TBPreprocessWorkingFolder.Text = workingFolder;
             TBTimelapseWorkingFolder.Text = workingFolder;
+            TBPreprocessInfoFile.Text = infoFile;
             TBTimelapse.Text = timelapseFile;
         }
 
@@ -121,15 +124,17 @@ namespace Timelapse_Creator
         {
             string SourceFolder = TBPreprocessSourceFolder.Text;
             string WorkingFolder = TBPreprocessWorkingFolder.Text;
+            string PreprocessInfoFile = TBPreprocessInfoFile.Text;
             int EveryNthImage = int.Parse(TBPreprocessEveryNthImage.Text);
-            float BrightTreshold = float.Parse(TBPreprocessBrightTreshold.Text, new CultureInfo("en-GB").NumberFormat);
+            float BrightThreshold = float.Parse(TBPreprocessBrightThreshold.Text, new CultureInfo("en-GB").NumberFormat);
 
             Thread t = new Thread(() =>
                 Preprocessor.Preprocess(
                     SourceFolder,
                     WorkingFolder,
+                    PreprocessInfoFile,
                     EveryNthImage,
-                    BrightTreshold
+                    BrightThreshold
                     ));
             t.Start();
         }
@@ -165,6 +170,14 @@ namespace Timelapse_Creator
             else
                 Log("Timelapse file not existing");
         }
+        private void TBPreprocessOpenInfoFile_Click(object sender, RoutedEventArgs e)
+        {
+            var file = TBPreprocessInfoFile.Text;
+            if (new FileInfo(file).Exists)
+                Process.Start(file);
+            else
+                Log("Info file not existing");
+        }
         #endregion
 
         #region Helper
@@ -198,5 +211,6 @@ namespace Timelapse_Creator
 
         }
         #endregion
+
     }
 }

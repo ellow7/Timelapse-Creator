@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Timelapse_Creator"
         mc:Ignorable="d"
-        Title="Timelapse Creator" Height="450" Width="1205" FontFamily="Consolas">
+        Title="Timelapse Creator" Height="474" Width="1205" FontFamily="Consolas">
     <DockPanel>
         <StackPanel>
             <StackPanel>
@@ -21,12 +21,17 @@
                     <Button x:Name="BTPreprocessOpenWorkingFolder" Content="open" Width="50" Click="BTOpenWorkingFolder_Click" ToolTip="Open the working folder in file explorer"/>
                 </DockPanel>
                 <DockPanel>
+                    <Label Content="Info File:" Width="120"/>
+                    <TextBox x:Name="TBPreprocessInfoFile" Text="C:/Timelapse_working/Info.csv" Width="200" IsReadOnly="True" Background="LightGray" ToolTip="This is a csv with information about the files (filename, brightness, imagestatus) to identify corrput images"/>
+                    <Button x:Name="TBPreprocessOpenInfoFile" Content="open" Width="50" ToolTip="Open the preprocess info file with the windows default program" Click="TBPreprocessOpenInfoFile_Click"/>
+                </DockPanel>
+                <DockPanel>
                     <Label Content="Every Nth Image:" Width="120"/>
                     <TextBox x:Name="TBPreprocessEveryNthImage" Text="1" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput" ToolTip="Only every nth image gets used. (e.g. every 5th image)"/>
                 </DockPanel>
                 <DockPanel>
-                    <Label Content="Bright Treshold:" Width="120"/>
-                    <TextBox x:Name="TBPreprocessBrightTreshold" Text="0.2" Width="250" PreviewTextInput="TextBox_Float_PreviewTextInput" ToolTip="Brightness treshold to filter out too dark images"/>
+                    <Label Content="Bright Threshold:" Width="120"/>
+                    <TextBox x:Name="TBPreprocessBrightThreshold" Text="0.2" Width="250" PreviewTextInput="TextBox_Float_PreviewTextInput" ToolTip="Brightness threshold to filter out too dark images"/>
                 </DockPanel>
                 <DockPanel>
                     <Button x:Name="BTPreprocessPreprocess" Content="Preprocess" Padding="3" Click="BTPreprocessPreprocess_Click" ToolTip="Start the preprocessing of the source folder"/>

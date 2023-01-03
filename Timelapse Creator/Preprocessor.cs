@@ -8,111 +8,122 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Shapes;
+using Path = System.IO.Path;
 
 namespace Timelapse_Creator
 {
     public static class Preprocessor
     {
-        public static void Preprocess(string SourceFolder, string WorkingFolder, int EveryNthImage = 1, double BrightTreshold = 0.2)
+        public static void Preprocess(string SourceFolder, string WorkingFolder, string PreprocessInfoFile, int EveryNthImage = 1, double BrightThreshold = 0.2)
         {
             try
             {
                 MainWindow.Log("Preprocessing.");
+
+                if (File.Exists(PreprocessInfoFile))
+                    File.Delete(PreprocessInfoFile);
+
                 if (!Directory.Exists(SourceFolder))
                     throw new Exception($"Directory {SourceFolder} does not exist.");
                 if (Directory.Exists(WorkingFolder))
                 {
-                    var res = MessageBox.Show("Do you want to delete the existing working folder\r\n" + WorkingFolder, "Delete working folder?", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                    var res = MessageBox.Show("Do you want to delete the existing working folder?\r\n(No lets you keep your already processed images, existing images will still be overwritten)\r\n" + WorkingFolder, "Delete working folder?", MessageBoxButton.YesNo, MessageBoxImage.Warning);
                     if (res == MessageBoxResult.Yes)
                         Directory.Delete(WorkingFolder, true);
                 }
                 Directory.CreateDirectory(WorkingFolder);
 
-                MainWindow.Log("Getting folders.");
-                var dirInfoTXT = Path.Combine(WorkingFolder, "dirinfo.csv");//statistics of the folders. here you can check how many good and bad images you have for each folder
-                List<string> dirInfos = new List<string> { "Directory;OK Images;Gray Images;Too Dark Images;" };//statistics of the folders
+                MainWindow.Log("Getting files.");
+                List<Tuple<string, double, ImageStatus>> PreprocessInfos = new List<Tuple<string, double, ImageStatus>>();//filename, brightness, status
 
-                List<float> brights = new List<float>();//debug
-                List<string> directories = Directory.GetDirectories(SourceFolder).ToList();//these will be processed
 
+                List<string> files = Directory.GetFiles(SourceFolder, "*.jpg", SearchOption.AllDirectories).OrderBy(R => R).ToList();//list of files we want to process
+
+                //stolen from https://stackoverflow.com/questions/11463734/split-a-list-into-smaller-lists-of-n-size
+                //I seperate the files to smaller parts of files to optimize parallelism
+                List<List<string>> fileChunks = files
+                     .Select((x, i) => new { Index = i, Value = x })
+                     .GroupBy(x => x.Index / 100)
+                     .Select(x => x.Select(v => v.Value).ToList())
+                     .ToList();
+
+                //progress information
                 Stopwatch sw = new Stopwatch();
                 sw.Start();
-                int i = 0;
-                MainWindow.Log($"Getting files and calculating brightnesses of {directories.Count} folders.");
+                int j = 0;
+                MainWindow.Log($"Calculating brightness and copying of {files.Count} files in {fileChunks.Count} chunks.");
 
-                Parallel.ForEach(directories, new ParallelOptions { MaxDegreeOfParallelism = 5 }, dir =>
+                //iterate the chunks in parallel
+                Parallel.ForEach(fileChunks, new ParallelOptions { MaxDegreeOfParallelism = 5 }, fileChunk =>
                 {
-                    i++;
                     try
                     {
-                        //Counter for statistics
-                        int grayImages = 0;
-                        int okImages = 0;
-                        int tooDarkImages = 0;
-                        List<string> okFiles = new List<string>();//filenames of good images
-                        List<string> files = Directory.GetFiles(dir, "*.jpg", SearchOption.TopDirectoryOnly).OrderBy(R => R).ToList();//these will be processed
-                        //List<bool> BrightImageMarker = new List<bool> { false, false, false };//floating list telling us the status of the last images processed - true is a ok image, false a dark image
-                        for (int j = 0; j < files.Count; j++)
+                        List<string> okFiles = new List<string>();//filenames of good images which we want to copy later parallelized
+                        foreach(var file in fileChunk)// (int k = 0; k < fileChunk.Count; k++)
                         {
                             try
                             {
-                                var img = new Bitmap(files.ElementAt(j));
+                                var img = new Bitmap(file);
                                 double bright = 0;
                                 bright = CalculateAverageLightness(img);
                                 img.Dispose();
 
-                                brights.Add((float)bright);
-
-                                if (bright > 0.495 && bright < 0.505)
-                                    grayImages++; //gray image (may occur with motion eye os when the connection to the cam broke down)
-                                else if (bright < BrightTreshold)
+                                if (bright > 0.495 && bright < 0.505)//completely gray image (may be a special case from motioneye os)
+                                    PreprocessInfos.Add(new Tuple<string, double, ImageStatus>(file, bright, ImageStatus.Gray));
+                                else if (bright < BrightThreshold)//too dark image
+                                    PreprocessInfos.Add(new Tuple<string, double, ImageStatus>(file, bright, ImageStatus.TooDark));
+                                else//ok image
                                 {
-                                    //if (BrightImageMarker.All(x => x == true))//we already had some ok images in a row and now the first dark - this is probably in the afternoon -> skip the rest. disable this if you have one large folder with all images.
-                                    //{
-                                    //    tooDarkImages += files.Count - j;//add the missing files to the counter
-                                    //    break;
-                                    //}
-                                    tooDarkImages++; //too dark
-                                    //BrightImageMarker.Add(false);
-                                    //BrightImageMarker.Remove(BrightImageMarker.First());
-                                }
-                                else
-                                {
-                                    okImages++;//bright image
-                                    //BrightImageMarker.Add(true);
-                                    //BrightImageMarker.Remove(BrightImageMarker.First());
-                                    okFiles.Add(files.ElementAt(j));
+                                    PreprocessInfos.Add(new Tuple<string, double, ImageStatus>(file, bright, ImageStatus.OK));
+                                    okFiles.Add(file);
                                 }
                             }
                             catch (Exception ex)
                             {
-                                MainWindow.Log($"Exception {files.ElementAt(j)}:\r\n{ex.Message}");
+                                MainWindow.Log($"Exception {file}:\r\n{ex.Message}");
+                                PreprocessInfos.Add(new Tuple<string, double, ImageStatus>(file, 0, ImageStatus.Error));
                             }
                         }
                         Parallel.ForEach(MainWindow.EveryNthElement(okFiles, EveryNthImage), file => //only every nth image
                         {
-                            var FI = new FileInfo(file);
-                            File.Copy(file, Path.Combine(WorkingFolder, FI.Name), true);
+                            string backPath = file.Replace(SourceFolder, "").Trim('/').Trim('\\');//C:/Timelapse/2023-01-01/08-00-00.jpg -> 2023-01-01/08-00-00.jpg
+                            string workingFilename = backPath.Replace("/", "_").Replace("\\", "_");//2023-01-01/08-00.jpg -> 2023-01-01_08-00-00.jpg
+                            File.Copy(file, Path.Combine(WorkingFolder, workingFilename), true);//C:/Timelapse_working/2023-01-01_08-00-00.jpg
                         });
-
-                        dirInfos.Add($"{dir};{okImages};{grayImages};{tooDarkImages};");
-                        var elapsed = sw.ElapsedMilliseconds * directories.Count / i - sw.ElapsedMilliseconds;
-                        //string dirInfo = $"Finished {dir}. {i} of {directories.Count} directories processed. ETA: {String.Format("{0:0.00}", elapsed / 1000 / 60.0, 2)} min";//estimate duration
-                        string dirInfo = $"Finished {i} of {directories.Count} directories. ETA: {String.Format("{0:0.00}", elapsed / 1000 / 60.0, 2)} min";//estimate duration
+                        j++;
+                        var elapsed = sw.ElapsedMilliseconds * fileChunks.Count / j - sw.ElapsedMilliseconds;
+                        string dirInfo = $"Finished {j} of {fileChunks.Count} file chunks. ETA: {String.Format("{0:0.00}", elapsed / 1000 / 60.0, 2)} min";//estimate duration
                         MainWindow.Log(dirInfo);
                     }
                     catch (Exception ex)
                     {
-                        MainWindow.Log($"Exception {dir}:\r\n{ex.Message}");
+                        MainWindow.Log($"Exception file chunk index {fileChunks.IndexOf(fileChunk)}:\r\n{ex.Message}");
                     }
                 });
-                File.WriteAllText(dirInfoTXT, string.Join("\r\n ", dirInfos));//write statistics
+                List<string> PreprocessInfoString = new List<string> { "Filename;Brightness;Threshold;Status;" };//statistics of the folders
+
+                foreach(var PreprocessInfo in PreprocessInfos.OrderBy(R => R.Item1))//order by filename
+                    PreprocessInfoString.Add($"{PreprocessInfo.Item1};{PreprocessInfo.Item2.ToString("0.000")};{BrightThreshold.ToString("0.000")};{PreprocessInfo.Item3.ToString()};");
+                File.WriteAllText(PreprocessInfoFile, string.Join("\r\n ", PreprocessInfoString));//write statistics
+
+                MainWindow.Log("Finished preprocessing.");
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error creating timelapse.\r\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 MainWindow.Log(ex.Message);
             }
+        }
+        /// <summary>
+        /// How the image got characterized.
+        /// </summary>
+        public enum ImageStatus
+        {
+            OK = 0,
+            Gray = 1,
+            TooDark = 2,
+            Error = 666
         }
         /// <summary>
         /// Stolen from https://stackoverflow.com/questions/7964839/determine-image-overall-lightness
