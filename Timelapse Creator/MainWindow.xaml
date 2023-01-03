@@ -12,24 +12,24 @@
                 <Label Content="1) Preprocess" FontSize="20" FontWeight="Bold"/>
                 <DockPanel>
                     <Label Content="Source Folder:" Width="120"/>
-                    <TextBox x:Name="TBPreprocessSourceFolder" Text="C:/Timelapse" Width="200" TextChanged="TBPreprocessSourceFolder_TextChanged" />
-                    <Button x:Name="BTBrowseSourceFolder" Width="50" Content="browse" Click="BTBrowseSourceFolder_Click"/>
+                    <TextBox x:Name="TBPreprocessSourceFolder" Text="C:/Timelapse" Width="200" TextChanged="TBPreprocessSourceFolder_TextChanged" ToolTip="Source folder of all the images" />
+                    <Button x:Name="BTBrowseSourceFolder" Width="50" Content="browse" Click="BTBrowseSourceFolder_Click" ToolTip="Browse for the source folder"/>
                 </DockPanel>
                 <DockPanel>
                     <Label Content="Working Folder:" Width="120"/>
-                    <TextBox x:Name="TBPreprocessWorkingFolder" Text="C:/Timelapse_working" Width="200" IsReadOnly="True" Background="LightGray"/>
-                    <Button x:Name="BTPreprocessOpenWorkingFolder" Content="open" Width="50" Click="BTOpenWorkingFolder_Click"/>
+                    <TextBox x:Name="TBPreprocessWorkingFolder" Text="C:/Timelapse_working" Width="200" IsReadOnly="True" Background="LightGray" ToolTip="Here go the preprocessed images"/>
+                    <Button x:Name="BTPreprocessOpenWorkingFolder" Content="open" Width="50" Click="BTOpenWorkingFolder_Click" ToolTip="Open the working folder in file explorer"/>
                 </DockPanel>
                 <DockPanel>
                     <Label Content="Every Nth Image:" Width="120"/>
-                    <TextBox x:Name="TBPreprocessEveryNthImage" Text="1" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput"/>
+                    <TextBox x:Name="TBPreprocessEveryNthImage" Text="1" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput" ToolTip="Only every nth image gets used. (e.g. every 5th image)"/>
                 </DockPanel>
                 <DockPanel>
                     <Label Content="Bright Treshold:" Width="120"/>
-                    <TextBox x:Name="TBPreprocessBrightTreshold" Text="0.2" Width="250" PreviewTextInput="TextBox_Float_PreviewTextInput"/>
+                    <TextBox x:Name="TBPreprocessBrightTreshold" Text="0.2" Width="250" PreviewTextInput="TextBox_Float_PreviewTextInput" ToolTip="Brightness treshold to filter out too dark images"/>
                 </DockPanel>
                 <DockPanel>
-                    <Button x:Name="BTPreprocessPreprocess" Content="Preprocess" Padding="3" Click="BTPreprocessPreprocess_Click"/>
+                    <Button x:Name="BTPreprocessPreprocess" Content="Preprocess" Padding="3" Click="BTPreprocessPreprocess_Click" ToolTip="Start the preprocessing of the source folder"/>
                 </DockPanel>
             </StackPanel>
             <Label Height="40"/>
@@ -37,32 +37,32 @@
                 <Label Content="2) Create Timelapse" FontSize="20" FontWeight="Bold"/>
                 <DockPanel>
                     <Label Content="Working Folder:" Width="120"/>
-                    <TextBox x:Name="TBTimelapseWorkingFolder" Text="C:/Working" Width="200" IsReadOnly="True" Background="LightGray"/>
-                    <Button x:Name="BTTimelapseOpenWorkingFolder" Content="open" Width="50" Click="BTOpenWorkingFolder_Click"/>
+                    <TextBox x:Name="TBTimelapseWorkingFolder" Text="C:/Working" Width="200" IsReadOnly="True" Background="LightGray" ToolTip="Here are the preprocessed images. These get used to generate the timelapse."/>
+                    <Button x:Name="BTTimelapseOpenWorkingFolder" Content="open" Width="50" Click="BTOpenWorkingFolder_Click" ToolTip="Open the working folder in file explorer"/>
                 </DockPanel>
                 <DockPanel>
                     <Label Content="Timelapse:" Width="120"/>
-                    <TextBox x:Name="TBTimelapse" Text="C:/Timelapse_working/Timelapse.mp4" Width="200" IsReadOnly="True" Background="LightGray"/>
-                    <Button x:Name="BTTimelapseOpenTimelapse" Content="open" Width="50" Click="BTTimelapseOpenTimelapse_Click"/>
+                    <TextBox x:Name="TBTimelapse" Text="C:/Timelapse_working/Timelapse.mp4" Width="200" IsReadOnly="True" Background="LightGray" ToolTip="This is the timelapse file that gets generated"/>
+                    <Button x:Name="BTTimelapseOpenTimelapse" Content="open" Width="50" Click="BTTimelapseOpenTimelapse_Click" ToolTip="Open the timelapse file with the windows default program"/>
                 </DockPanel>
                 <DockPanel>
                     <Label Content="Every Nth Image:" Width="120"/>
-                    <TextBox x:Name="TBTimelapseEveryNthImage" Text="100" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput"/>
+                    <TextBox x:Name="TBTimelapseEveryNthImage" Text="100" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput" ToolTip="Only every nth image gets used. (e.g. every 5th image)"/>
                 </DockPanel>
                 <DockPanel>
                     <Label Content="Resolution X:" Width="120"/>
-                    <TextBox x:Name="TBTimelapseResolutionX" Text="1920" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput"/>
+                    <TextBox x:Name="TBTimelapseResolutionX" Text="1920" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput" ToolTip="X Resolution of the timelapse"/>
                 </DockPanel>
                 <DockPanel>
                     <Label Content="Resolution Y:" Width="120"/>
-                    <TextBox x:Name="TBTimelapseResolutionY" Text="1080" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput"/>
+                    <TextBox x:Name="TBTimelapseResolutionY" Text="1080" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput" ToolTip="Y Resolution of the timelapse"/>
                 </DockPanel>
                 <DockPanel>
                     <Label Content="FPS:" Width="120"/>
-                    <TextBox x:Name="TBTimelapseFPS" Text="60"  Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput"/>
+                    <TextBox x:Name="TBTimelapseFPS" Text="60"  Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput" ToolTip="Frames per second of the timelapse"/>
                 </DockPanel>
                 <DockPanel>
-                    <Button x:Name="BTTimelapseCreateTimelapse" Content="Create Timelapse" Padding="3" Click="BTTimelapseCreateTimelapse_Click"/>
+                    <Button x:Name="BTTimelapseCreateTimelapse" Content="Create Timelapse" Padding="3" Click="BTTimelapseCreateTimelapse_Click" ToolTip="Start the creation of the timelapse from the images of the working folder"/>
                 </DockPanel>
             </StackPanel>
         </StackPanel>
@@ -70,7 +70,7 @@
         <StackPanel>
             <Label Content="ETC" FontSize="20" FontWeight="Bold"/>
             <Label Content="Log:"/>
-            <TextBox x:Name="TBLog" Height="200" TextWrapping="Wrap" xml:space="preserve" AcceptsReturn="True" VerticalScrollBarVisibility="Visible" IsReadOnly="True" Background="LightGray"/>
+            <TextBox x:Name="TBLog" Height="200" TextWrapping="Wrap" xml:space="preserve" AcceptsReturn="True" VerticalScrollBarVisibility="Visible" IsReadOnly="True" Background="LightGray" ToolTip="Logging information"/>
         </StackPanel>
     </DockPanel>
 </Window>
