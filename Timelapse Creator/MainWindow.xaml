@@ -12,7 +12,7 @@
                 <Label Content="1) Preprocess" FontSize="20" FontWeight="Bold"/>
                 <DockPanel>
                     <Label Content="Source Folder:" Width="120"/>
-                    <TextBox x:Name="TBPreprocessSourceFolder" Text="C:/Timelapse" Width="200" TextChanged="TBPreprocessSourceFolder_TextChanged" ToolTip="Source folder of all the images" />
+                    <TextBox x:Name="TBPreprocessSourceFolder" Text="C:/Timelapse" Width="200" TextChanged="TBPreprocessSourceFolder_TextChanged" ToolTip="Source folder of all the images. Only *.jpg are used." />
                     <Button x:Name="BTBrowseSourceFolder" Width="50" Content="browse" Click="BTBrowseSourceFolder_Click" ToolTip="Browse for the source folder"/>
                 </DockPanel>
                 <DockPanel>
