@@ -10,3 +10,5 @@ MotionEyeOS is configured for taking a still image every minute in the file form
 I let it run for half a year (~250.000 images) and this software handles it quite well - although it takes roughly an hour to process.
 
 ![Capture](https://user-images.githubusercontent.com/18436406/210234699-53cf1f19-fd08-4a53-816d-028318613e82.PNG)
+
+![Capture](https://user-images.githubusercontent.com/18436406/210350452-dd825c01-d74b-4649-8638-c8a2449c620b.PNG)
