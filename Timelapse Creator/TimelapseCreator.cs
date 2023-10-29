@@ -77,7 +77,7 @@ namespace Timelapse_Creator
                         image.Dispose();//cleanup
                         resized.Dispose();
                         var elapsed = sw.ElapsedMilliseconds * files.Count / (i + 1) - sw.ElapsedMilliseconds;
-                        MainWindow.Log($"{i} of {files.Count} images processed. ETA: {String.Format("{0:0.00}", elapsed / 1000 / 60.0, 2)} min");//estimate duration
+                        MainWindow.Log($"{i} of {files.Count} images processed. ETA: {String.Format("{0:0}", elapsed / 1000 / 60.0, 2)} min");//estimate duration
                     }
                     vw.Close();
                 }

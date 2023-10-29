@@ -3,7 +3,34 @@
   <Profiles />
   <Settings>
     <Setting Name="SourceFolder" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+      <Value Profile="(Default)">C:/Timelapse</Value>
+    </Setting>
+    <Setting Name="PreprocessEveryNthImage" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">1</Value>
+    </Setting>
+    <Setting Name="PreprocessBrightThreshold" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">0.2</Value>
+    </Setting>
+    <Setting Name="TimelapseEveryNthImage" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">100</Value>
+    </Setting>
+    <Setting Name="TimelapseResolutionX" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">1920</Value>
+    </Setting>
+    <Setting Name="TimelapseResolutionY" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">1080</Value>
+    </Setting>
+    <Setting Name="TimelapseFPS" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">60</Value>
+    </Setting>
+    <Setting Name="FTPServer" Type="System.String" Scope="User">
+      <Value Profile="(Default)">192.168.0.123</Value>
+    </Setting>
+    <Setting Name="FTPBasePath" Type="System.String" Scope="User">
+      <Value Profile="(Default)">/home/ftp/sdcard/Camera1</Value>
+    </Setting>
+    <Setting Name="FTPUser" Type="System.String" Scope="User">
+      <Value Profile="(Default)">admin</Value>
     </Setting>
   </Settings>
 </SettingsFile>

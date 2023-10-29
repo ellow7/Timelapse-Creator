@@ -93,7 +93,7 @@ namespace Timelapse_Creator
                         });
                         j++;
                         var elapsed = sw.ElapsedMilliseconds * fileChunks.Count / j - sw.ElapsedMilliseconds;
-                        string dirInfo = $"Finished {j} of {fileChunks.Count} file chunks. ETA: {String.Format("{0:0.00}", elapsed / 1000 / 60.0, 2)} min";//estimate duration
+                        string dirInfo = $"Finished {j} of {fileChunks.Count} file chunks. ETA: {String.Format("{0:0}", elapsed / 1000 / 60.0, 2)} min";//estimate duration
                         MainWindow.Log(dirInfo);
                     }
                     catch (Exception ex)

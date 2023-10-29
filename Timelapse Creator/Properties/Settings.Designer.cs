@@ -12,7 +12,7 @@ namespace Timelapse_Creator.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.4.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.6.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -25,13 +25,121 @@ namespace Timelapse_Creator.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        [global::System.Configuration.DefaultSettingValueAttribute("C:/Timelapse")]
         public string SourceFolder {
             get {
                 return ((string)(this["SourceFolder"]));
             }
             set {
                 this["SourceFolder"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public int PreprocessEveryNthImage {
+            get {
+                return ((int)(this["PreprocessEveryNthImage"]));
+            }
+            set {
+                this["PreprocessEveryNthImage"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0.2")]
+        public double PreprocessBrightThreshold {
+            get {
+                return ((double)(this["PreprocessBrightThreshold"]));
+            }
+            set {
+                this["PreprocessBrightThreshold"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("100")]
+        public int TimelapseEveryNthImage {
+            get {
+                return ((int)(this["TimelapseEveryNthImage"]));
+            }
+            set {
+                this["TimelapseEveryNthImage"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1920")]
+        public int TimelapseResolutionX {
+            get {
+                return ((int)(this["TimelapseResolutionX"]));
+            }
+            set {
+                this["TimelapseResolutionX"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1080")]
+        public int TimelapseResolutionY {
+            get {
+                return ((int)(this["TimelapseResolutionY"]));
+            }
+            set {
+                this["TimelapseResolutionY"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("60")]
+        public int TimelapseFPS {
+            get {
+                return ((int)(this["TimelapseFPS"]));
+            }
+            set {
+                this["TimelapseFPS"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("192.168.0.123")]
+        public string FTPServer {
+            get {
+                return ((string)(this["FTPServer"]));
+            }
+            set {
+                this["FTPServer"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("/home/ftp/sdcard/Camera1")]
+        public string FTPBasePath {
+            get {
+                return ((string)(this["FTPBasePath"]));
+            }
+            set {
+                this["FTPBasePath"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("admin")]
+        public string FTPUser {
+            get {
+                return ((string)(this["FTPUser"]));
+            }
+            set {
+                this["FTPUser"] = value;
             }
         }
     }

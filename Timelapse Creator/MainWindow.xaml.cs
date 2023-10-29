@@ -25,6 +25,8 @@ using System.Timers;
 using Accord.IO;
 using System.Windows.Threading;
 using System.Globalization;
+using System.Net;
+using Renci.SshNet;
 
 namespace Timelapse_Creator
 {
@@ -38,7 +40,7 @@ namespace Timelapse_Creator
         {
             InitializeComponent();
 
-            TBPreprocessSourceFolder.Text = Properties.Settings.Default.SourceFolder;
+            LoadSettings();
 
             LogTimer = new System.Timers.Timer(500);
             LogTimer.Elapsed += LogTimer_Elapsed;
@@ -46,6 +48,62 @@ namespace Timelapse_Creator
 
             Log("Started");
         }
+
+        #region Settings
+        /// <summary>
+        /// Load settings and apply them to the controls.
+        /// </summary>
+        private void LoadSettings()
+        {
+            TBSourceFolder.Text = Properties.Settings.Default.SourceFolder;
+            TBFTPServer.Text = Properties.Settings.Default.FTPServer;
+            TBFTPBasepath.Text = Properties.Settings.Default.FTPBasePath;
+            TBFTPUser.Text = Properties.Settings.Default.FTPUser;
+            TBPreprocessEveryNthImage.Text = Properties.Settings.Default.PreprocessEveryNthImage.ToString();
+            TBPreprocessBrightThreshold.Text = Properties.Settings.Default.PreprocessBrightThreshold.ToString();
+
+            TBTimelapseEveryNthImage.Text = Properties.Settings.Default.TimelapseEveryNthImage.ToString();
+            TBTimelapseResolutionX.Text = Properties.Settings.Default.TimelapseResolutionX.ToString();
+            TBTimelapseResolutionY.Text = Properties.Settings.Default.TimelapseResolutionY.ToString();
+            TBTimelapseFPS.Text = Properties.Settings.Default.TimelapseFPS.ToString();
+        }
+        /// <summary>
+        /// Save settings from the controls to the settings.
+        /// </summary>
+        private void SaveFTPSettings()
+        {
+            Properties.Settings.Default.SourceFolder = TBSourceFolder.Text;
+            Properties.Settings.Default.FTPServer = TBFTPServer.Text;
+            Properties.Settings.Default.FTPBasePath = TBFTPBasepath.Text;
+            Properties.Settings.Default.FTPUser = TBFTPUser.Text;
+
+            Properties.Settings.Default.Save();
+        }
+        /// <summary>
+        /// Save settings from the controls to the settings.
+        /// </summary>
+        private void SavePreprocessSettings()
+        {
+            Properties.Settings.Default.SourceFolder = TBSourceFolder.Text;
+            Properties.Settings.Default.PreprocessEveryNthImage = Convert.ToInt32(TBPreprocessEveryNthImage.Text);
+            Properties.Settings.Default.PreprocessBrightThreshold = double.Parse(TBPreprocessBrightThreshold.Text.Replace(",", "."), CultureInfo.InvariantCulture);
+
+            Properties.Settings.Default.Save();
+        }
+        /// <summary>
+        /// Save settings from the controls to the settings.
+        /// </summary>
+        private void SaveTimelapseSettings()
+        {
+            Properties.Settings.Default.SourceFolder = TBSourceFolder.Text;
+            Properties.Settings.Default.TimelapseEveryNthImage = Convert.ToInt32(TBTimelapseEveryNthImage.Text);
+            Properties.Settings.Default.TimelapseResolutionX = Convert.ToInt32(TBTimelapseResolutionX.Text);
+            Properties.Settings.Default.TimelapseResolutionY = Convert.ToInt32(TBTimelapseResolutionY.Text);
+            Properties.Settings.Default.TimelapseFPS = Convert.ToInt32(TBTimelapseFPS.Text);
+
+            Properties.Settings.Default.Save();
+        }
+        #endregion
 
         #region Logging
         private static List<string> logs = new List<string>();
@@ -59,6 +117,11 @@ namespace Timelapse_Creator
             logs.Add(msg);
             Console.WriteLine(msg);
         }
+        /// <summary>
+        /// Updates the log.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void LogTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             if (TBLog.Dispatcher.CheckAccess())
@@ -79,24 +142,102 @@ namespace Timelapse_Creator
         }
         #endregion
 
+        #region FTP
+        private void BTPreprocessGetFTPImages_Click(object sender, RoutedEventArgs e)
+        {
+            string FTPServer = TBFTPServer.Text;
+            string FTPUser = TBFTPUser.Text;
+            string FTPPass = TBFTPPass.Text;
+            string FTPBasepath = TBFTPBasepath.Text;
+            string SourceFolder = TBSourceFolder.Text;
+
+            Thread t = new Thread(() =>
+                DownloadFTPFiles(
+                    FTPServer,
+                    FTPUser,
+                    FTPPass,
+                    FTPBasepath,
+                    SourceFolder
+                    ));
+            t.Start();
+
+            SaveFTPSettings();
+        }
+
+        private void DownloadFTPFiles(string sftpHost, string sftpUser, string sftpPassword, string remoteBasePath, string localBasePath)
+        {
+            DownloadFTPFilesRecursively(sftpHost, sftpUser, sftpPassword, remoteBasePath, localBasePath);
+            Log($"FTP finished from {remoteBasePath}");
+        }
+        private void DownloadFTPFilesRecursively(string sftpHost, string sftpUser, string sftpPassword, string remoteBasePath, string localBasePath)
+        {
+            try
+            {
+                using (var client = new SftpClient(sftpHost, sftpUser, sftpPassword))
+                {
+                    client.Connect();
+
+                    Log($"Reading files from {remoteBasePath}");
+                    var files = client.ListDirectory(remoteBasePath);
+                    foreach (var file in files)
+                    {
+                        if (file.Name == "." || file.Name == "..")
+                        {
+                            continue;
+                        }
+
+                        if (file.IsDirectory)
+                        {
+                            // Create the local directory if it doesn't exist
+                            Directory.CreateDirectory(System.IO.Path.Combine(localBasePath, file.Name));
+
+                            // Recursively get files in the directory
+                            DownloadFTPFilesRecursively(sftpHost, sftpUser, sftpPassword, file.FullName, System.IO.Path.Combine(localBasePath, file.Name));
+                        }
+                        else
+                        {
+                            string from = file.FullName;
+                            string to = System.IO.Path.Combine(localBasePath, file.Name);
+
+                            // Download the file
+                            using (var stream = System.IO.File.Create(to))
+                            {
+                                client.DownloadFile(from, stream);
+                            }
+
+                            // Delete the file on the SFTP server
+                            client.DeleteFile(from);
+
+                            Log($"Moved file {file.FullName}");
+                        }
+                    }
+                    client.Disconnect();
+                }
+            }
+            catch (Exception ex)
+            {
+                //MessageBox.Show("Error getting FTP images.\r\n" + ex.Message, "FTP Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Log("Error getting FTP images.\r\n" + ex.Message);
+            }
+        }
+        #endregion
+
         #region Preprocess
         private void TBPreprocessSourceFolder_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (TBPreprocessWorkingFolder == null)
+            if (TBWorkingFolder == null)
                 return;
-            TBPreprocessWorkingFolder.Text = "";
-            TBTimelapseWorkingFolder.Text = "";
+            TBWorkingFolder.Text = "";
             TBPreprocessInfoFile.Text = "";
             TBTimelapse.Text = "";
-            var folder = TBPreprocessSourceFolder.Text;
-            if (!new DirectoryInfo(folder).Exists)
+            var folder = TBSourceFolder.Text;
+            if (folder == "" || !new DirectoryInfo(folder).Exists)
                 return;
 
             string workingFolder = new DirectoryInfo(folder).FullName.Trim('\\') + "_working\\";
             string timelapseFile = System.IO.Path.Combine(workingFolder, "Timelapse.mp4");
             string infoFile = System.IO.Path.Combine(workingFolder, "Info.csv");
-            TBPreprocessWorkingFolder.Text = workingFolder;
-            TBTimelapseWorkingFolder.Text = workingFolder;
+            TBWorkingFolder.Text = workingFolder;
             TBPreprocessInfoFile.Text = infoFile;
             TBTimelapse.Text = timelapseFile;
         }
@@ -115,18 +256,16 @@ namespace Timelapse_Creator
 
             if (cofd.ShowDialog() == CommonFileDialogResult.Ok)
             {
-                Properties.Settings.Default.SourceFolder = cofd.FileName;
-                Properties.Settings.Default.Save();
-                TBPreprocessSourceFolder.Text = cofd.FileName;
+                TBSourceFolder.Text = cofd.FileName;
             }
         }
         private void BTPreprocessPreprocess_Click(object sender, RoutedEventArgs e)
         {
-            string SourceFolder = TBPreprocessSourceFolder.Text;
-            string WorkingFolder = TBPreprocessWorkingFolder.Text;
+            string SourceFolder = TBSourceFolder.Text;
+            string WorkingFolder = TBWorkingFolder.Text;
             string PreprocessInfoFile = TBPreprocessInfoFile.Text;
             int EveryNthImage = int.Parse(TBPreprocessEveryNthImage.Text);
-            float BrightThreshold = float.Parse(TBPreprocessBrightThreshold.Text, new CultureInfo("en-GB").NumberFormat);
+            double BrightThreshold = double.Parse(TBPreprocessBrightThreshold.Text.Replace(",", "."), CultureInfo.InvariantCulture);
 
             Thread t = new Thread(() =>
                 Preprocessor.Preprocess(
@@ -137,19 +276,21 @@ namespace Timelapse_Creator
                     BrightThreshold
                     ));
             t.Start();
+
+            SavePreprocessSettings();
         }
         #endregion
 
         #region Timelapse
         private void BTTimelapseCreateTimelapse_Click(object sender, RoutedEventArgs e)
         {
-            string WorkingFolder = TBTimelapseWorkingFolder.Text;
+            string WorkingFolder = TBWorkingFolder.Text;
             string TimelapseFile = TBTimelapse.Text;
             int EveryNthImage = int.Parse(TBTimelapseEveryNthImage.Text);
             int ResolutionX = int.Parse(TBTimelapseResolutionX.Text);
             int ResolutionY = int.Parse(TBTimelapseResolutionY.Text);
             int FPS = int.Parse(TBTimelapseFPS.Text);
-            
+
             Thread t = new Thread(() =>
                 TimelapseCreator.CreateTimelapse(
                     WorkingFolder,
@@ -160,6 +301,8 @@ namespace Timelapse_Creator
                     FPS
                     ));
             t.Start();
+
+            SaveTimelapseSettings();
         }
 
         private void BTTimelapseOpenTimelapse_Click(object sender, RoutedEventArgs e)
@@ -183,7 +326,7 @@ namespace Timelapse_Creator
         #region Helper
         private void BTOpenWorkingFolder_Click(object sender, RoutedEventArgs e)
         {
-            var folder = TBPreprocessWorkingFolder.Text;
+            var folder = TBWorkingFolder.Text;
             if (new DirectoryInfo(folder).Exists)
                 Process.Start(folder);
             else
@@ -206,11 +349,10 @@ namespace Timelapse_Creator
         }
         private void TextBox_Float_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            System.Text.RegularExpressions.Regex regex = new System.Text.RegularExpressions.Regex("^[.][0-9]+$|^[0-9]*[.]{0,1}[0-9]*$");
+            System.Text.RegularExpressions.Regex regex = new System.Text.RegularExpressions.Regex("^[,][0-9]+$|^[0-9]*[,]{0,1}[0-9]*$");
             e.Handled = !regex.IsMatch((sender as TextBox).Text.Insert((sender as TextBox).SelectionStart, e.Text));
 
         }
         #endregion
-
     }
 }

@@ -5,21 +5,48 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Timelapse_Creator"
         mc:Ignorable="d"
-        Title="Timelapse Creator" Height="474" Width="1205" FontFamily="Consolas">
-    <DockPanel>
+        Title="Timelapse Creator" Height="764" Width="1187" FontFamily="Consolas">
+    <DockPanel Margin="10">
         <StackPanel>
             <StackPanel>
-                <Label Content="1) Preprocess" FontSize="20" FontWeight="Bold"/>
+                <Label Content="Where we working boss?" FontSize="20" FontWeight="Bold"/>
                 <DockPanel>
                     <Label Content="Source Folder:" Width="120"/>
-                    <TextBox x:Name="TBPreprocessSourceFolder" Text="C:/Timelapse" Width="200" TextChanged="TBPreprocessSourceFolder_TextChanged" ToolTip="Source folder of all the images. Only *.jpg are used." />
+                    <TextBox x:Name="TBSourceFolder" Text="C:/Timelapse" Width="200" TextChanged="TBPreprocessSourceFolder_TextChanged" ToolTip="Source folder of all the images. Only *.jpg are used." />
                     <Button x:Name="BTBrowseSourceFolder" Width="50" Content="browse" Click="BTBrowseSourceFolder_Click" ToolTip="Browse for the source folder"/>
                 </DockPanel>
                 <DockPanel>
                     <Label Content="Working Folder:" Width="120"/>
-                    <TextBox x:Name="TBPreprocessWorkingFolder" Text="C:/Timelapse_working" Width="200" IsReadOnly="True" Background="LightGray" ToolTip="Here go the preprocessed images"/>
+                    <TextBox x:Name="TBWorkingFolder" Text="C:/Timelapse_working" Width="200" IsReadOnly="True" Background="LightGray" ToolTip="Here go the preprocessed images"/>
                     <Button x:Name="BTPreprocessOpenWorkingFolder" Content="open" Width="50" Click="BTOpenWorkingFolder_Click" ToolTip="Open the working folder in file explorer"/>
                 </DockPanel>
+            </StackPanel>
+            <Label Height="40"/>
+            <StackPanel>
+                <Label Content="0) FTP (optional)" FontSize="20" FontWeight="Bold"/>
+                <DockPanel>
+                    <Label Content="FTP Server:" Width="120"/>
+                    <TextBox x:Name="TBFTPServer" Text="192.168.0.123" Width="250"  ToolTip="FTP Server. Only SFTP allowed!" />
+                </DockPanel>
+                <DockPanel>
+                    <Label Content="FTP Basepath:" Width="120"/>
+                    <TextBox x:Name="TBFTPBasepath" Text="/home/ftp/sdcard/Camera1" Width="250"  ToolTip="Relative folder on ther FTP sewrver" />
+                </DockPanel>
+                <DockPanel>
+                    <Label Content="FTP User:" Width="120"/>
+                    <TextBox x:Name="TBFTPUser" Text="admin" Width="250"  ToolTip="Self explainatory :)" />
+                </DockPanel>
+                <DockPanel>
+                    <Label Content="FTP Pass:" Width="120"/>
+                    <TextBox x:Name="TBFTPPass" Text="" Width="250"  ToolTip="Self explainatory :)" />
+                </DockPanel>
+                <DockPanel>
+                    <Button x:Name="BTGetFTPImages" Content="Get FTP Images" Padding="3" ToolTip="Saves images from the FTP server to the source folder. Deletes them from the FTP afterwards." Click="BTPreprocessGetFTPImages_Click"/>
+                </DockPanel>
+            </StackPanel>
+            <Label Height="40"/>
+            <StackPanel>
+                <Label Content="1) Preprocess" FontSize="20" FontWeight="Bold"/>
                 <DockPanel>
                     <Label Content="Info File:" Width="120"/>
                     <TextBox x:Name="TBPreprocessInfoFile" Text="C:/Timelapse_working/Info.csv" Width="200" IsReadOnly="True" Background="LightGray" ToolTip="This is a csv with information about the files (filename, brightness, imagestatus) to identify corrput images"/>
@@ -40,11 +67,6 @@
             <Label Height="40"/>
             <StackPanel>
                 <Label Content="2) Create Timelapse" FontSize="20" FontWeight="Bold"/>
-                <DockPanel>
-                    <Label Content="Working Folder:" Width="120"/>
-                    <TextBox x:Name="TBTimelapseWorkingFolder" Text="C:/Working" Width="200" IsReadOnly="True" Background="LightGray" ToolTip="Here are the preprocessed images. These get used to generate the timelapse."/>
-                    <Button x:Name="BTTimelapseOpenWorkingFolder" Content="open" Width="50" Click="BTOpenWorkingFolder_Click" ToolTip="Open the working folder in file explorer"/>
-                </DockPanel>
                 <DockPanel>
                     <Label Content="Timelapse:" Width="120"/>
                     <TextBox x:Name="TBTimelapse" Text="C:/Timelapse_working/Timelapse.mp4" Width="200" IsReadOnly="True" Background="LightGray" ToolTip="This is the timelapse file that gets generated"/>
@@ -73,9 +95,8 @@
         </StackPanel>
         <Label Width="100"/>
         <StackPanel>
-            <Label Content="ETC" FontSize="20" FontWeight="Bold"/>
-            <Label Content="Log:"/>
-            <TextBox x:Name="TBLog" Height="200" TextWrapping="Wrap" xml:space="preserve" AcceptsReturn="True" VerticalScrollBarVisibility="Visible" IsReadOnly="True" Background="LightGray" ToolTip="Logging information"/>
+            <Label Content="Log" FontSize="20" FontWeight="Bold"/>
+            <TextBox x:Name="TBLog" Height="588" TextWrapping="Wrap" xml:space="preserve" AcceptsReturn="True" VerticalScrollBarVisibility="Visible" IsReadOnly="True" Background="LightGray" ToolTip="Logging information"/>
         </StackPanel>
     </DockPanel>
 </Window>
