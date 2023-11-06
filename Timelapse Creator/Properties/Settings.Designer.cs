@@ -142,5 +142,17 @@ namespace Timelapse_Creator.Properties {
                 this["FTPUser"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string FTPPassword {
+            get {
+                return ((string)(this["FTPPassword"]));
+            }
+            set {
+                this["FTPPassword"] = value;
+            }
+        }
     }
 }

@@ -32,5 +32,8 @@
     <Setting Name="FTPUser" Type="System.String" Scope="User">
       <Value Profile="(Default)">admin</Value>
     </Setting>
+    <Setting Name="FTPPassword" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
   </Settings>
 </SettingsFile>

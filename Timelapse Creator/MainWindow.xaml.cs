@@ -27,6 +27,7 @@ using System.Windows.Threading;
 using System.Globalization;
 using System.Net;
 using Renci.SshNet;
+using System.Security.Policy;
 
 namespace Timelapse_Creator
 {
@@ -56,9 +57,12 @@ namespace Timelapse_Creator
         private void LoadSettings()
         {
             TBSourceFolder.Text = Properties.Settings.Default.SourceFolder;
+
             TBFTPServer.Text = Properties.Settings.Default.FTPServer;
             TBFTPBasepath.Text = Properties.Settings.Default.FTPBasePath;
             TBFTPUser.Text = Properties.Settings.Default.FTPUser;
+            PBFTPPass.Password = Properties.Settings.Default.FTPPassword;
+
             TBPreprocessEveryNthImage.Text = Properties.Settings.Default.PreprocessEveryNthImage.ToString();
             TBPreprocessBrightThreshold.Text = Properties.Settings.Default.PreprocessBrightThreshold.ToString();
 
@@ -76,6 +80,19 @@ namespace Timelapse_Creator
             Properties.Settings.Default.FTPServer = TBFTPServer.Text;
             Properties.Settings.Default.FTPBasePath = TBFTPBasepath.Text;
             Properties.Settings.Default.FTPUser = TBFTPUser.Text;
+
+            if (Properties.Settings.Default.FTPPassword != null && Properties.Settings.Default.FTPPassword != "")//already saved a pw, now save it without dialog
+            {
+                Properties.Settings.Default.FTPPassword = PBFTPPass.Password;
+            }
+            else
+            {
+                var res = MessageBox.Show("Save password for FTP server in clear text?\r\nThis software will remember your choice and only ask once.", "Save password?", MessageBoxButton.YesNo, MessageBoxImage.Question);//someone can implement some kind of encryption if they want to
+                if (res == MessageBoxResult.Yes)
+                {
+                    Properties.Settings.Default.FTPPassword = PBFTPPass.Password;
+                }
+            }
 
             Properties.Settings.Default.Save();
         }
@@ -142,12 +159,13 @@ namespace Timelapse_Creator
         }
         #endregion
 
+        #region 0) FTP (optional)
         #region FTP
-        private void BTPreprocessGetFTPImages_Click(object sender, RoutedEventArgs e)
+        private void BTGetFTPImages_Click(object sender, RoutedEventArgs e)
         {
             string FTPServer = TBFTPServer.Text;
             string FTPUser = TBFTPUser.Text;
-            string FTPPass = TBFTPPass.Text;
+            string FTPPass = PBFTPPass.Password;
             string FTPBasepath = TBFTPBasepath.Text;
             string SourceFolder = TBSourceFolder.Text;
 
@@ -163,13 +181,113 @@ namespace Timelapse_Creator
 
             SaveFTPSettings();
         }
-
-        private void DownloadFTPFiles(string sftpHost, string sftpUser, string sftpPassword, string remoteBasePath, string localBasePath)
+        private void DownloadFTPFiles(string ftpHost, string ftpUser, string ftpPassword, string remoteBasePath, string localBasePath)
         {
-            DownloadFTPFilesRecursively(sftpHost, sftpUser, sftpPassword, remoteBasePath, localBasePath);
+            DownloadFTPFilesRecursively("ftp://" + ftpHost, ftpUser, ftpPassword, remoteBasePath, localBasePath);
             Log($"FTP finished from {remoteBasePath}");
         }
-        private void DownloadFTPFilesRecursively(string sftpHost, string sftpUser, string sftpPassword, string remoteBasePath, string localBasePath)
+        private void DownloadFTPFilesRecursively(string ftpHost, string ftpUser, string ftpPassword, string remoteBasePath, string localBasePath)
+        {
+            try
+            {
+                var url = ftpHost + remoteBasePath;
+                var credentials = new NetworkCredential(ftpUser, ftpPassword);
+                FtpWebRequest listRequest = (FtpWebRequest)WebRequest.Create(url);
+                listRequest.Method = WebRequestMethods.Ftp.ListDirectoryDetails;
+                listRequest.Credentials = credentials;
+
+                List<string> lines = new List<string>();
+
+                using (var listResponse = (FtpWebResponse)listRequest.GetResponse())
+                using (Stream listStream = listResponse.GetResponseStream())
+                using (var listReader = new StreamReader(listStream))
+                {
+                    while (!listReader.EndOfStream)
+                    {
+                        lines.Add(listReader.ReadLine());
+                    }
+                }
+
+                foreach (string line in lines)
+                {
+                    string[] tokens = line.Split(new[] { ' ' }, 9, StringSplitOptions.RemoveEmptyEntries);
+                    string name = tokens[8];
+                    string permissions = tokens[0];
+
+                    string localFilePath = System.IO.Path.Combine(localBasePath, name);
+                    string fileUrl = url + "/" + name;
+
+                    if (permissions[0] == 'd')
+                    {
+                        Directory.CreateDirectory(localFilePath);
+                        DownloadFTPFilesRecursively(ftpHost, ftpUser, ftpPassword, remoteBasePath + "/" + name, localBasePath + "\\" + name);
+                    }
+                    else
+                    {
+                        FtpWebRequest downloadRequest = (FtpWebRequest)WebRequest.Create(fileUrl);
+                        downloadRequest.Method = WebRequestMethods.Ftp.DownloadFile;
+                        downloadRequest.Credentials = credentials;
+
+                        using (FtpWebResponse downloadResponse =
+                                  (FtpWebResponse)downloadRequest.GetResponse())
+                        using (Stream sourceStream = downloadResponse.GetResponseStream())
+                        using (Stream targetStream = System.IO.File.Create(localFilePath))
+                        {
+                            byte[] buffer = new byte[10240];
+                            int read;
+                            while ((read = sourceStream.Read(buffer, 0, buffer.Length)) > 0)
+                            {
+                                targetStream.Write(buffer, 0, read);
+                            }
+                        }
+
+                        //Delete the file on the FTP server(if needed)
+                        var requestDel = (FtpWebRequest)WebRequest.Create(fileUrl);
+                        requestDel.Credentials = new NetworkCredential(ftpUser, ftpPassword);
+                        requestDel.Method = WebRequestMethods.Ftp.DeleteFile;
+
+                        using (var responseDel = (FtpWebResponse)requestDel.GetResponse())
+                        {
+                            // File deleted
+                        }
+                        Log($"Moved file {fileUrl}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Error getting FTP images of {remoteBasePath}.\r\n{ex.Message}");
+            }
+        }
+        #endregion
+
+        #region FTPS
+        private void BTPreprocessGetSFTPImages_Click(object sender, RoutedEventArgs e)
+        {
+            string FTPServer = TBFTPServer.Text;
+            string FTPUser = TBFTPUser.Text;
+            string FTPPass = PBFTPPass.Password;
+            string FTPBasepath = TBFTPBasepath.Text;
+            string SourceFolder = TBSourceFolder.Text;
+
+            Thread t = new Thread(() =>
+                DownloadSFTPFiles(
+                    FTPServer,
+                    FTPUser,
+                    FTPPass,
+                    FTPBasepath,
+                    SourceFolder
+                    ));
+            t.Start();
+
+            SaveFTPSettings();
+        }
+        private void DownloadSFTPFiles(string sftpHost, string sftpUser, string sftpPassword, string remoteBasePath, string localBasePath)
+        {
+            DownloadSFTPFilesRecursively(sftpHost, sftpUser, sftpPassword, remoteBasePath, localBasePath);
+            Log($"SFTP finished from {remoteBasePath}");
+        }
+        private void DownloadSFTPFilesRecursively(string sftpHost, string sftpUser, string sftpPassword, string remoteBasePath, string localBasePath)
         {
             try
             {
@@ -192,7 +310,7 @@ namespace Timelapse_Creator
                             Directory.CreateDirectory(System.IO.Path.Combine(localBasePath, file.Name));
 
                             // Recursively get files in the directory
-                            DownloadFTPFilesRecursively(sftpHost, sftpUser, sftpPassword, file.FullName, System.IO.Path.Combine(localBasePath, file.Name));
+                            DownloadSFTPFilesRecursively(sftpHost, sftpUser, sftpPassword, file.FullName, System.IO.Path.Combine(localBasePath, file.Name));
                         }
                         else
                         {
@@ -208,7 +326,7 @@ namespace Timelapse_Creator
                             // Delete the file on the SFTP server
                             client.DeleteFile(from);
 
-                            Log($"Moved file {file.FullName}");
+                            Log($"Moved file {from}");
                         }
                     }
                     client.Disconnect();
@@ -216,13 +334,13 @@ namespace Timelapse_Creator
             }
             catch (Exception ex)
             {
-                //MessageBox.Show("Error getting FTP images.\r\n" + ex.Message, "FTP Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                Log("Error getting FTP images.\r\n" + ex.Message);
+                Log($"Error getting SFTP images of {remoteBasePath}.\r\n{ex.Message}");
             }
         }
         #endregion
+        #endregion
 
-        #region Preprocess
+        #region 1) Preprocess
         private void TBPreprocessSourceFolder_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (TBWorkingFolder == null)
@@ -281,7 +399,7 @@ namespace Timelapse_Creator
         }
         #endregion
 
-        #region Timelapse
+        #region 2) Timelapse
         private void BTTimelapseCreateTimelapse_Click(object sender, RoutedEventArgs e)
         {
             string WorkingFolder = TBWorkingFolder.Text;
@@ -323,7 +441,7 @@ namespace Timelapse_Creator
         }
         #endregion
 
-        #region Helper
+        #region 3) Helper
         private void BTOpenWorkingFolder_Click(object sender, RoutedEventArgs e)
         {
             var folder = TBWorkingFolder.Text;
@@ -354,5 +472,6 @@ namespace Timelapse_Creator
 
         }
         #endregion
+
     }
 }

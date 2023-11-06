@@ -26,7 +26,7 @@
                 <Label Content="0) FTP (optional)" FontSize="20" FontWeight="Bold"/>
                 <DockPanel>
                     <Label Content="FTP Server:" Width="120"/>
-                    <TextBox x:Name="TBFTPServer" Text="192.168.0.123" Width="250"  ToolTip="FTP Server. Only SFTP allowed!" />
+                    <TextBox x:Name="TBFTPServer" Text="192.168.0.123" Width="250"  ToolTip="FTP Server" />
                 </DockPanel>
                 <DockPanel>
                     <Label Content="FTP Basepath:" Width="120"/>
@@ -38,10 +38,11 @@
                 </DockPanel>
                 <DockPanel>
                     <Label Content="FTP Pass:" Width="120"/>
-                    <TextBox x:Name="TBFTPPass" Text="" Width="250"  ToolTip="Self explainatory :)" />
+                    <PasswordBox x:Name="PBFTPPass" Width="250" ToolTip="Self explainatory :)"  />
                 </DockPanel>
                 <DockPanel>
-                    <Button x:Name="BTGetFTPImages" Content="Get FTP Images" Padding="3" ToolTip="Saves images from the FTP server to the source folder. Deletes them from the FTP afterwards." Click="BTPreprocessGetFTPImages_Click"/>
+                    <Button x:Name="BTGetFTPImages" Content="Get FTP Images" Padding="3" ToolTip="Saves images from the FTP server to the source folder. Deletes them from the FTP afterwards." Width="175" Click="BTGetFTPImages_Click"/>
+                    <Button x:Name="BTGetSFTPImages" Content="Get SFTP Images" Padding="3" ToolTip="Saves images from the FTP server to the source folder. Deletes them from the FTP afterwards." Click="BTPreprocessGetSFTPImages_Click"/>
                 </DockPanel>
             </StackPanel>
             <Label Height="40"/>
