@@ -160,6 +160,7 @@ namespace Timelapse_Creator
         #endregion
 
         #region 0) FTP (optional)
+        int movedFilesFromFTP;
         #region FTP
         private void BTGetFTPImages_Click(object sender, RoutedEventArgs e)
         {
@@ -183,8 +184,10 @@ namespace Timelapse_Creator
         }
         private void DownloadFTPFiles(string ftpHost, string ftpUser, string ftpPassword, string remoteBasePath, string localBasePath)
         {
+            movedFilesFromFTP = 0;
+            Log($"FTP starting from {remoteBasePath}");
             DownloadFTPFilesRecursively("ftp://" + ftpHost, ftpUser, ftpPassword, remoteBasePath, localBasePath);
-            Log($"FTP finished from {remoteBasePath}");
+            Log($"FTP finished from {remoteBasePath}. Downloaded {movedFilesFromFTP} files.");
         }
         private void DownloadFTPFilesRecursively(string ftpHost, string ftpUser, string ftpPassword, string remoteBasePath, string localBasePath)
         {
@@ -250,6 +253,7 @@ namespace Timelapse_Creator
                         {
                             // File deleted
                         }
+                        movedFilesFromFTP++;
                         Log($"Moved file {fileUrl}");
                     }
                 }
@@ -284,8 +288,10 @@ namespace Timelapse_Creator
         }
         private void DownloadSFTPFiles(string sftpHost, string sftpUser, string sftpPassword, string remoteBasePath, string localBasePath)
         {
+            movedFilesFromFTP = 0;
+            Log($"SFTP starting from {remoteBasePath}");
             DownloadSFTPFilesRecursively(sftpHost, sftpUser, sftpPassword, remoteBasePath, localBasePath);
-            Log($"SFTP finished from {remoteBasePath}");
+            Log($"SFTP finished from {remoteBasePath}. Downloaded {movedFilesFromFTP} files.");
         }
         private void DownloadSFTPFilesRecursively(string sftpHost, string sftpUser, string sftpPassword, string remoteBasePath, string localBasePath)
         {
@@ -326,6 +332,7 @@ namespace Timelapse_Creator
                             // Delete the file on the SFTP server
                             client.DeleteFile(from);
 
+                            movedFilesFromFTP++;
                             Log($"Moved file {from}");
                         }
                     }
