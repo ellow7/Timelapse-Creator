@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Timelapse_Creator"
         mc:Ignorable="d"
-        Title="Timelapse Creator" Height="764" Width="1187" FontFamily="Consolas">
+        Title="Timelapse Creator" Height="764" Width="1187" FontFamily="Consolas" Icon="/android-chrome-512x512.png">
     <DockPanel Margin="10">
         <StackPanel>
             <StackPanel>
@@ -97,7 +97,11 @@
         <Label Width="100"/>
         <StackPanel>
             <Label Content="Log" FontSize="20" FontWeight="Bold"/>
-            <TextBox x:Name="TBLog" Height="588" TextWrapping="Wrap" xml:space="preserve" AcceptsReturn="True" VerticalScrollBarVisibility="Visible" IsReadOnly="True" Background="LightGray" ToolTip="Logging information"/>
+            <TextBox x:Name="TBLog" Height="621" TextWrapping="Wrap" xml:space="preserve" AcceptsReturn="True" VerticalScrollBarVisibility="Visible" IsReadOnly="True" ToolTip="Logging information" BorderBrush="Black">
+                <TextBox.Background>
+                    <ImageBrush ImageSource="/android-chrome-512x512.png" Opacity="0.3" Stretch="None"/>
+                </TextBox.Background>
+            </TextBox>
         </StackPanel>
     </DockPanel>
 </Window>
