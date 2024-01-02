@@ -99,7 +99,7 @@
             <Label Content="Log" FontSize="20" FontWeight="Bold"/>
             <TextBox x:Name="TBLog" Height="621" TextWrapping="Wrap" xml:space="preserve" AcceptsReturn="True" VerticalScrollBarVisibility="Visible" IsReadOnly="True" ToolTip="Logging information" BorderBrush="Black">
                 <TextBox.Background>
-                    <ImageBrush ImageSource="/android-chrome-512x512.png" Opacity="0.3" Stretch="None"/>
+                    <ImageBrush ImageSource="/android-chrome-512x512.png" Opacity="0.15" Stretch="None"/>
                 </TextBox.Background>
             </TextBox>
         </StackPanel>
