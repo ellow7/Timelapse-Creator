@@ -1,8 +1,10 @@
-﻿using System;
+﻿using Microsoft.SqlServer.Server;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -15,7 +17,7 @@ namespace Timelapse_Creator
 {
     public static class Preprocessor
     {
-        public static void Preprocess(string SourceFolder, string WorkingFolder, string PreprocessInfoFile, int EveryNthImage = 1, double BrightThreshold = 0.2)
+        public static void PreprocessCount(string SourceFolder, string WorkingFolder, string PreprocessInfoFile, int EveryNthImage = 1, double BrightThreshold = 0.2)
         {
             try
             {
@@ -60,29 +62,36 @@ namespace Timelapse_Creator
                     try
                     {
                         List<string> okFiles = new List<string>();//filenames of good images which we want to copy later parallelized
-                        foreach(var file in fileChunk)// (int k = 0; k < fileChunk.Count; k++)
+                        if (BrightThreshold == 0)//skip if we ignore the brightness setting
                         {
-                            try
+                            okFiles.AddRange(fileChunk);
+                        }
+                        else
+                        {
+                            foreach (var file in fileChunk)// (int k = 0; k < fileChunk.Count; k++)
                             {
-                                var img = new Bitmap(file);
-                                double bright = 0;
-                                bright = CalculateAverageLightness(img);
-                                img.Dispose();
-
-                                if (bright > 0.495 && bright < 0.505)//completely gray image (may be a special case from motioneye os)
-                                    PreprocessInfos.Add(new Tuple<string, double, ImageStatus>(file, bright, ImageStatus.Gray));
-                                else if (bright < BrightThreshold)//too dark image
-                                    PreprocessInfos.Add(new Tuple<string, double, ImageStatus>(file, bright, ImageStatus.TooDark));
-                                else//ok image
+                                try
                                 {
-                                    PreprocessInfos.Add(new Tuple<string, double, ImageStatus>(file, bright, ImageStatus.OK));
-                                    okFiles.Add(file);
+                                    var img = new Bitmap(file);
+                                    double bright = 0;
+                                    bright = CalculateAverageLightness(img);
+                                    img.Dispose();
+
+                                    if (bright > 0.495 && bright < 0.505)//completely gray image (may be a special case from motioneye os)
+                                        PreprocessInfos.Add(new Tuple<string, double, ImageStatus>(file, bright, ImageStatus.Gray));
+                                    else if (bright < BrightThreshold)//too dark image
+                                        PreprocessInfos.Add(new Tuple<string, double, ImageStatus>(file, bright, ImageStatus.TooDark));
+                                    else//ok image
+                                    {
+                                        PreprocessInfos.Add(new Tuple<string, double, ImageStatus>(file, bright, ImageStatus.OK));
+                                        okFiles.Add(file);
+                                    }
                                 }
-                            }
-                            catch (Exception ex)
-                            {
-                                MainWindow.Log($"Exception {file}:\r\n{ex.Message}");
-                                PreprocessInfos.Add(new Tuple<string, double, ImageStatus>(file, 0, ImageStatus.Error));
+                                catch (Exception ex)
+                                {
+                                    MainWindow.Log($"Exception {file}:\r\n{ex.Message}");
+                                    PreprocessInfos.Add(new Tuple<string, double, ImageStatus>(file, 0, ImageStatus.Error));
+                                }
                             }
                         }
                         Parallel.ForEach(MainWindow.EveryNthElement(okFiles, EveryNthImage), file => //only every nth image
@@ -103,7 +112,7 @@ namespace Timelapse_Creator
                 });
                 List<string> PreprocessInfoString = new List<string> { "Filename;Brightness;Threshold;Status;" };//statistics of the folders
 
-                foreach(var PreprocessInfo in PreprocessInfos.OrderBy(R => R.Item1))//order by filename
+                foreach (var PreprocessInfo in PreprocessInfos.OrderBy(R => R.Item1))//order by filename
                     PreprocessInfoString.Add($"{PreprocessInfo.Item1};{PreprocessInfo.Item2.ToString("0.000")};{BrightThreshold.ToString("0.000")};{PreprocessInfo.Item3.ToString()};");
                 File.WriteAllText(PreprocessInfoFile, string.Join("\r\n ", PreprocessInfoString));//write statistics
 
@@ -111,7 +120,130 @@ namespace Timelapse_Creator
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error creating timelapse.\r\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Error preprocessing.\r\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MainWindow.Log(ex.Message);
+            }
+        }
+
+        public static void PreprocessTime(string SourceFolder, string WorkingFolder, string PreprocessTimestampFormat, string PreprocessTimes)
+        {
+            try
+            {
+                MainWindow.Log("Preprocessing.");
+
+                if (!Directory.Exists(SourceFolder))
+                    throw new Exception($"Directory {SourceFolder} does not exist.");
+
+                if (Directory.Exists(WorkingFolder))
+                {
+                    var res = MessageBox.Show("Do you want to delete the existing working folder?\r\n(No lets you keep your already processed images, existing images will still be overwritten)\r\n" + WorkingFolder, "Delete working folder?", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                    if (res == MessageBoxResult.Yes)
+                        Directory.Delete(WorkingFolder, true);
+                }
+                Directory.CreateDirectory(WorkingFolder);
+
+                #region Manage preprocess Times
+                List<Tuple<int, int>> preprocessTimes = new List<Tuple<int, int>>();//hours, minutes
+                foreach (string time in PreprocessTimes.Split(';'))
+                {
+                    // Parse the time string into a DateTime object
+                    DateTime parsedTime;
+                    if (DateTime.TryParseExact(time, "HH:mm", null, DateTimeStyles.None, out parsedTime))
+                    {
+                        int hours = parsedTime.Hour;
+                        int minutes = parsedTime.Minute;
+                        Console.WriteLine($"Time: {time}, Hours: {hours}, Minutes: {minutes}");
+                        preprocessTimes.Add(new Tuple<int, int>(hours, minutes));
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Invalid time format: {time}");
+                    }
+                }
+                if (preprocessTimes.Count == 0)
+                    throw new Exception($"Could not parse Preprocess Times {PreprocessTimes} correctly.");
+                #endregion
+
+                MainWindow.Log("Getting files.");
+                List<string> files = Directory.GetFiles(SourceFolder, "*.jpg", SearchOption.AllDirectories).OrderBy(R => R).ToList();//list of files we want to process
+                files = files.OrderBy(R => R).ToList();
+
+                MainWindow.Log($"Filtering images by time and copying of {files.Count} files.");
+
+                List<Tuple<string, DateTime>> fileDateTimes = new List<Tuple<string, DateTime>>();//filename, datetime
+
+                #region Parse datetimes from filenames
+                foreach (var file in files)
+                {
+                    try
+                    {
+                        string fileDateTime = Path.GetFileNameWithoutExtension(file);
+                        DateTime parsedDate;
+                        bool success = DateTime.TryParseExact(fileDateTime, PreprocessTimestampFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedDate);
+                        if (!success)
+                        {
+                            MainWindow.Log($"Could not parse datetime of {file}");
+                        }
+                        else
+                        {
+                            fileDateTimes.Add(new Tuple<string, DateTime>(file, parsedDate));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MainWindow.Log($"Exception {file}:\r\n{ex.Message}");
+                    }
+                }
+                #endregion
+
+                #region Get correct files by time of day
+                //get min and max days
+                var dateTimes = fileDateTimes.Select(R => R.Item2);
+                DateTime minDT = dateTimes.Min();
+                DateTime maxDT = dateTimes.Max();
+
+                List<string> filesToCopy = new List<string>();
+
+                //iterate single days
+                for (DateTime date = minDT; date <= maxDT; date = date.AddDays(1))
+                {
+                    //iterate search times from preprocessTimes, e.g. 09:00;15:00
+                    foreach (var time in preprocessTimes)
+                    {
+                        DateTime seachTime = new DateTime(date.Year, date.Month, date.Day, time.Item1, time.Item2, 0);
+                        var found = fileDateTimes.FirstOrDefault(R => R.Item2 > seachTime);
+                        if (found != null)
+                            filesToCopy.Add(found.Item1);
+                    }
+
+                    Console.WriteLine(date.ToString("yyyy-MM-dd"));
+                }
+                #endregion
+
+                #region Copy found files
+                //progress information
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
+                int i = 0;
+                MainWindow.Log($"Copying {filesToCopy.Count} files.");
+                foreach (var file in filesToCopy)
+                {
+                    string backPath = file.Replace(SourceFolder, "").Trim('/').Trim('\\');//C:/Timelapse/2023-01-01/08-00-00.jpg -> 2023-01-01/08-00-00.jpg
+                    string workingFilename = backPath.Replace("/", "_").Replace("\\", "_");//2023-01-01/08-00.jpg -> 2023-01-01_08-00-00.jpg
+                    File.Copy(file, Path.Combine(WorkingFolder, workingFilename), true);//C:/Timelapse_working/2023-01-01_08-00-00.jpg
+
+                    i++;
+                    var elapsed = sw.ElapsedMilliseconds * filesToCopy.Count / i - sw.ElapsedMilliseconds;
+                    string dirInfo = $"Finished {i} of {filesToCopy.Count} files. ETA: {String.Format("{0:0}", elapsed / 1000 / 60.0, 2)} min";//estimate duration
+                    MainWindow.Log(dirInfo);
+                }
+                #endregion
+
+                MainWindow.Log("Finished preprocessing.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error preprocessing.\r\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 MainWindow.Log(ex.Message);
             }
         }

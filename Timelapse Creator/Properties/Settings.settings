@@ -35,5 +35,11 @@
     <Setting Name="FTPPassword" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <Setting Name="PreprocessTimestampFormat" Type="System.String" Scope="User">
+      <Value Profile="(Default)">yyyy-MM-dd.HH-mm-ss</Value>
+    </Setting>
+    <Setting Name="PreprocessTimes" Type="System.String" Scope="User">
+      <Value Profile="(Default)">09:00;15:00</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

@@ -65,6 +65,8 @@ namespace Timelapse_Creator
 
             TBPreprocessEveryNthImage.Text = Properties.Settings.Default.PreprocessEveryNthImage.ToString();
             TBPreprocessBrightThreshold.Text = Properties.Settings.Default.PreprocessBrightThreshold.ToString();
+            TBPreprocessTimestampFormat.Text = Properties.Settings.Default.PreprocessTimestampFormat;
+            TBPreprocessTimes.Text = Properties.Settings.Default.PreprocessTimes;
 
             TBTimelapseEveryNthImage.Text = Properties.Settings.Default.TimelapseEveryNthImage.ToString();
             TBTimelapseResolutionX.Text = Properties.Settings.Default.TimelapseResolutionX.ToString();
@@ -104,6 +106,8 @@ namespace Timelapse_Creator
             Properties.Settings.Default.SourceFolder = TBSourceFolder.Text;
             Properties.Settings.Default.PreprocessEveryNthImage = Convert.ToInt32(TBPreprocessEveryNthImage.Text);
             Properties.Settings.Default.PreprocessBrightThreshold = double.Parse(TBPreprocessBrightThreshold.Text.Replace(",", "."), CultureInfo.InvariantCulture);
+            Properties.Settings.Default.PreprocessTimestampFormat = TBPreprocessTimestampFormat.Text;
+            Properties.Settings.Default.PreprocessTimes = TBPreprocessTimes.Text;
 
             Properties.Settings.Default.Save();
         }
@@ -130,9 +134,13 @@ namespace Timelapse_Creator
         /// <param name="msg"></param>
         public static void Log(string msg)
         {
-            msg = DateTime.Now.ToLongTimeString() + " - " + msg;
-            logs.Add(msg);
-            Console.WriteLine(msg);
+            try
+            {
+                msg = DateTime.Now.ToLongTimeString() + " - " + msg;
+                Console.WriteLine(msg);
+                logs.Add(msg);
+            }
+            catch { }
         }
         /// <summary>
         /// Updates the log.
@@ -384,7 +392,7 @@ namespace Timelapse_Creator
                 TBSourceFolder.Text = cofd.FileName;
             }
         }
-        private void BTPreprocessPreprocess_Click(object sender, RoutedEventArgs e)
+        private void BTPreprocessPreprocessCount_Click(object sender, RoutedEventArgs e)
         {
             string SourceFolder = TBSourceFolder.Text;
             string WorkingFolder = TBWorkingFolder.Text;
@@ -393,12 +401,31 @@ namespace Timelapse_Creator
             double BrightThreshold = double.Parse(TBPreprocessBrightThreshold.Text.Replace(",", "."), CultureInfo.InvariantCulture);
 
             Thread t = new Thread(() =>
-                Preprocessor.Preprocess(
+                Preprocessor.PreprocessCount(
                     SourceFolder,
                     WorkingFolder,
                     PreprocessInfoFile,
                     EveryNthImage,
                     BrightThreshold
+                    ));
+            t.Start();
+
+            SavePreprocessSettings();
+        }
+
+        private void BTPreprocessPreprocessTime_Click(object sender, RoutedEventArgs e)
+        {
+            string SourceFolder = TBSourceFolder.Text;
+            string WorkingFolder = TBWorkingFolder.Text;
+            string PreprocessTimestampFormat = TBPreprocessTimestampFormat.Text;
+            string PreprocessTimes = TBPreprocessTimes.Text;
+
+            Thread t = new Thread(() =>
+                Preprocessor.PreprocessTime(
+                    SourceFolder,
+                    WorkingFolder,
+                    PreprocessTimestampFormat,
+                    PreprocessTimes
                     ));
             t.Start();
 

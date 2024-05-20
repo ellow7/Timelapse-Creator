@@ -12,7 +12,7 @@ namespace Timelapse_Creator.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.6.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.8.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -152,6 +152,30 @@ namespace Timelapse_Creator.Properties {
             }
             set {
                 this["FTPPassword"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("yyyy-MM-dd.HH-mm-ss")]
+        public string PreprocessTimestampFormat {
+            get {
+                return ((string)(this["PreprocessTimestampFormat"]));
+            }
+            set {
+                this["PreprocessTimestampFormat"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("09:00;15:00")]
+        public string PreprocessTimes {
+            get {
+                return ((string)(this["PreprocessTimes"]));
+            }
+            set {
+                this["PreprocessTimes"] = value;
             }
         }
     }

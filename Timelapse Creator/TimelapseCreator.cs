@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media.Effects;
 
 namespace Timelapse_Creator
 {
@@ -71,13 +72,28 @@ namespace Timelapse_Creator
                     files = MainWindow.EveryNthElement(files, EveryNthImage);//if you want to skip some images here
                     for (int i = 0; i < files.Count; i++)
                     {
-                        Bitmap image = Bitmap.FromFile(files.ElementAt(i)) as Bitmap;//read the original image
-                        Bitmap resized = new Bitmap(image, new System.Drawing.Size(timelapseResolutionX, timelapseResolutionY));//resize it - ffmpeg just cuts it if you don't
+                        Bitmap image = null;
+                        Bitmap resized = null;
+                        try
+                        {
+                            image = Bitmap.FromFile(files.ElementAt(i)) as Bitmap; //read the original image
+                            resized = new Bitmap(image, new System.Drawing.Size(timelapseResolutionX, timelapseResolutionY));//resize it - ffmpeg just cuts it if you don't
+                        }
+                        catch (Exception ex)
+                        {
+                            MainWindow.Log($"Could not read and resize {files.ElementAt(i)}");
+                            continue;
+                        }
+
                         vw.WriteVideoFrame(resized);//write it to the video
-                        image.Dispose();//cleanup
+
+                        //cleanup
+                        image.Dispose();
                         resized.Dispose();
+
                         var elapsed = sw.ElapsedMilliseconds * files.Count / (i + 1) - sw.ElapsedMilliseconds;
                         MainWindow.Log($"{i} of {files.Count} images processed. ETA: {String.Format("{0:0}", elapsed / 1000 / 60.0, 2)} min");//estimate duration
+
                     }
                     vw.Close();
                 }
