@@ -1,4 +1,5 @@
-﻿using Microsoft.SqlServer.Server;
+﻿using MetadataExtractor.Formats.Exif;
+using Microsoft.SqlServer.Server;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,6 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Shapes;
@@ -125,7 +127,7 @@ namespace Timelapse_Creator
             }
         }
 
-        public static void PreprocessTime(string SourceFolder, string WorkingFolder, string PreprocessTimestampFormat, string PreprocessTimes)
+        public static void PreprocessTime(string SourceFolder, string WorkingFolder, bool PreprocessTimestampFromFormat, string PreprocessTimestampFormat, string PreprocessTimes)
         {
             try
             {
@@ -171,22 +173,50 @@ namespace Timelapse_Creator
                 MainWindow.Log($"Filtering images by time and copying of {files.Count} files.");
 
                 List<Tuple<string, DateTime>> fileDateTimes = new List<Tuple<string, DateTime>>();//filename, datetime
+                Regex r = new Regex(":");
 
+                //progress information
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
                 #region Parse datetimes from filenames
+                int i = 0;
                 foreach (var file in files)
                 {
                     try
                     {
-                        string fileDateTime = Path.GetFileNameWithoutExtension(file);
                         DateTime parsedDate;
-                        bool success = DateTime.TryParseExact(fileDateTime, PreprocessTimestampFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedDate);
-                        if (!success)
-                        {
-                            MainWindow.Log($"Could not parse datetime of {file}");
+                        if (PreprocessTimestampFromFormat)
+                        {//get timestamp from filename
+                            string filename = Path.GetFileNameWithoutExtension(file);
+                            bool success = DateTime.TryParseExact(filename, PreprocessTimestampFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedDate);
+                            if (!success)
+                            {
+                                MainWindow.Log($"Could not parse datetime of {file}");
+                            }
+                            else
+                            {
+                                fileDateTimes.Add(new Tuple<string, DateTime>(file, parsedDate));
+
+                                i++;
+                                if (i % 1000 == 0)
+                                {
+                                    var elapsed = sw.ElapsedMilliseconds * files.Count / i - sw.ElapsedMilliseconds;
+                                    string dirInfo = $"[Step 1 of 2] Getting times from {i} of {files.Count} files. ETA: {String.Format("{0:0}", elapsed / 1000 / 60.0, 2)} min";//estimate duration
+                                    MainWindow.Log(dirInfo);
+                                }
+                            }
                         }
                         else
-                        {
-                            fileDateTimes.Add(new Tuple<string, DateTime>(file, parsedDate));
+                        {//get timestamp from file property
+                            fileDateTimes.Add(new Tuple<string, DateTime>(file, GetDateTaken(file)));
+
+                            i++;
+                            if (i % 1000 == 0)
+                            {
+                                var elapsed = sw.ElapsedMilliseconds * files.Count / i - sw.ElapsedMilliseconds;
+                                string dirInfo = $"[Step 1 of 2] Getting times from {i} of {files.Count} files. ETA: {String.Format("{0:0}", elapsed / 1000 / 60.0, 2)} min";//estimate duration
+                                MainWindow.Log(dirInfo);
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -197,12 +227,13 @@ namespace Timelapse_Creator
                 #endregion
 
                 #region Get correct files by time of day
+                MainWindow.Log("Filtering by time of day");
                 //get min and max days
                 var dateTimes = fileDateTimes.Select(R => R.Item2);
                 DateTime minDT = dateTimes.Min();
                 DateTime maxDT = dateTimes.Max();
 
-                List<string> filesToCopy = new List<string>();
+                List<Tuple<string, DateTime>> filesToCopy = new List<Tuple<string, DateTime>>();
 
                 //iterate single days
                 for (DateTime date = minDT; date <= maxDT; date = date.AddDays(1))
@@ -213,7 +244,7 @@ namespace Timelapse_Creator
                         DateTime seachTime = new DateTime(date.Year, date.Month, date.Day, time.Item1, time.Item2, 0);
                         var found = fileDateTimes.FirstOrDefault(R => R.Item2 > seachTime);
                         if (found != null)
-                            filesToCopy.Add(found.Item1);
+                            filesToCopy.Add(found);
                     }
 
                     Console.WriteLine(date.ToString("yyyy-MM-dd"));
@@ -222,20 +253,24 @@ namespace Timelapse_Creator
 
                 #region Copy found files
                 //progress information
-                Stopwatch sw = new Stopwatch();
-                sw.Start();
-                int i = 0;
+                sw.Restart();
+                i = 0;
                 MainWindow.Log($"Copying {filesToCopy.Count} files.");
                 foreach (var file in filesToCopy)
                 {
-                    string backPath = file.Replace(SourceFolder, "").Trim('/').Trim('\\');//C:/Timelapse/2023-01-01/08-00-00.jpg -> 2023-01-01/08-00-00.jpg
-                    string workingFilename = backPath.Replace("/", "_").Replace("\\", "_");//2023-01-01/08-00.jpg -> 2023-01-01_08-00-00.jpg
-                    File.Copy(file, Path.Combine(WorkingFolder, workingFilename), true);//C:/Timelapse_working/2023-01-01_08-00-00.jpg
+                    //string backPath = file.Replace(SourceFolder, "").Trim('/').Trim('\\');//C:/Timelapse/2023-01-01/08-00-00.jpg -> 2023-01-01/08-00-00.jpg
+                    //string workingFilename = backPath.Replace("/", "_").Replace("\\", "_");//2023-01-01/08-00.jpg -> 2023-01-01_08-00-00.jpg
+                    //File.Copy(file, Path.Combine(WorkingFolder, workingFilename), true);//C:/Timelapse_working/2023-01-01_08-00-00.jpg
+
+                    File.Copy(file.Item1, Path.Combine(WorkingFolder, file.Item2.ToString("yyyy-MM-dd.HH-mm-ss") + ".jpg"), true);//C:/Timelapse_working/2023-01-01.08-00-00.jpg
 
                     i++;
-                    var elapsed = sw.ElapsedMilliseconds * filesToCopy.Count / i - sw.ElapsedMilliseconds;
-                    string dirInfo = $"Finished {i} of {filesToCopy.Count} files. ETA: {String.Format("{0:0}", elapsed / 1000 / 60.0, 2)} min";//estimate duration
-                    MainWindow.Log(dirInfo);
+                    if (i % 100 == 0)
+                    {
+                        var elapsed = sw.ElapsedMilliseconds * filesToCopy.Count / i - sw.ElapsedMilliseconds;
+                        string dirInfo = $"[Step 2 of 2] Finished {i} of {filesToCopy.Count} files. ETA: {String.Format("{0:0}", elapsed / 1000 / 60.0, 2)} min";//estimate duration
+                        MainWindow.Log(dirInfo);
+                    }
                 }
                 #endregion
 
@@ -246,6 +281,26 @@ namespace Timelapse_Creator
                 MessageBox.Show($"Error preprocessing.\r\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 MainWindow.Log(ex.Message);
             }
+        }
+        public static DateTime GetDateTaken(string file)
+        {
+            var directories = MetadataExtractor.ImageMetadataReader.ReadMetadata(file);
+            var subIfdDirectory = directories.OfType<ExifSubIfdDirectory>().FirstOrDefault();
+            if (subIfdDirectory != null && MetadataExtractor.DirectoryExtensions.TryGetDateTime(subIfdDirectory, ExifDirectoryBase.TagDateTimeOriginal, out var dateTaken))
+            {
+                return dateTaken;
+            }
+            throw new Exception("Date taken not found");
+
+            //using (FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read))
+            //using (Image myImage = Image.FromStream(fs, false, false))
+            //{
+            //    //var test = myImage.PropertyItems;
+            //    PropertyItem propItem = myImage.GetPropertyItem(36867);//306 should also work?
+            //    string dateTaken = r.Replace(Encoding.UTF8.GetString(propItem.Value), "-", 2);
+            //    parsedDate = DateTime.Parse(dateTaken);
+            //    fileDateTimes.Add(new Tuple<string, DateTime>(file, parsedDate));
+            //}
         }
         /// <summary>
         /// How the image got characterized.

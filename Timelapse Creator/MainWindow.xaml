@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Timelapse_Creator"
         mc:Ignorable="d"
-        Title="Timelapse Creator" Height="822" Width="1187" FontFamily="Consolas" Icon="/android-chrome-512x512.png">
+        Title="Timelapse Creator" Height="869" Width="1187" FontFamily="Consolas" Icon="/android-chrome-512x512.png">
     <DockPanel Margin="10">
         <StackPanel>
             <StackPanel>
@@ -23,7 +23,7 @@
             </StackPanel>
             <Label Height="40"/>
             <StackPanel>
-                <Label Content="0) FTP (optional)" FontSize="20" FontWeight="Bold"/>
+                <Label Content="0) FTP" FontSize="20" FontWeight="Bold"/>
                 <DockPanel>
                     <Label Content="FTP Server:" Width="120"/>
                     <TextBox x:Name="TBFTPServer" Text="192.168.0.123" Width="250"  ToolTip="FTP Server" />
@@ -66,6 +66,11 @@
                     <Button x:Name="BTPreprocessPreprocessCount" Content="Preprocess by Counting" Padding="3" Click="BTPreprocessPreprocessCount_Click" ToolTip="Start the preprocessing of the source folder"/>
                 </DockPanel>
                 <Label Height="20"/>
+                <DockPanel>
+                    <Label Content="Timestamp From:" Width="120"/>
+                    <RadioButton x:Name="RBPreprocessTimestampFromFormat" GroupName="timestamp from" VerticalAlignment="Center" IsChecked="True">Format</RadioButton>
+                    <RadioButton x:Name="RBPreprocessTimestampFromFileProperty" GroupName="timestamp from" VerticalAlignment="Center">File Property</RadioButton>
+                </DockPanel>
                 <DockPanel>
                     <Label Content="Timestamp Format:" Width="120"/>
                     <TextBox x:Name="TBPreprocessTimestampFormat" Text="yyyy-MM-dd.HH-mm-ss" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput" ToolTip="Timestamp format of the filenames"/>
@@ -110,7 +115,7 @@
         <Label Width="100"/>
         <StackPanel>
             <Label Content="Log" FontSize="20" FontWeight="Bold"/>
-            <TextBox x:Name="TBLog" Height="621" TextWrapping="Wrap" xml:space="preserve" AcceptsReturn="True" VerticalScrollBarVisibility="Visible" IsReadOnly="True" ToolTip="Logging information" BorderBrush="Black">
+            <TextBox x:Name="TBLog" Height="767" TextWrapping="Wrap" xml:space="preserve" AcceptsReturn="True" VerticalScrollBarVisibility="Visible" IsReadOnly="True" ToolTip="Logging information" BorderBrush="Black">
                 <TextBox.Background>
                     <ImageBrush ImageSource="/android-chrome-512x512.png" Opacity="0.15" Stretch="None"/>
                 </TextBox.Background>

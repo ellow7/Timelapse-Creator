@@ -41,5 +41,8 @@
     <Setting Name="PreprocessTimes" Type="System.String" Scope="User">
       <Value Profile="(Default)">09:00;15:00</Value>
     </Setting>
+    <Setting Name="PreprocessTimestampFromFormat" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

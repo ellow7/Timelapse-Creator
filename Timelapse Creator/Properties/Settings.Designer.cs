@@ -178,5 +178,17 @@ namespace Timelapse_Creator.Properties {
                 this["PreprocessTimes"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool PreprocessTimestampFromFormat {
+            get {
+                return ((bool)(this["PreprocessTimestampFromFormat"]));
+            }
+            set {
+                this["PreprocessTimestampFromFormat"] = value;
+            }
+        }
     }
 }

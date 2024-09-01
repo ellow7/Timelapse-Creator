@@ -66,6 +66,16 @@ namespace Timelapse_Creator
             TBPreprocessEveryNthImage.Text = Properties.Settings.Default.PreprocessEveryNthImage.ToString();
             TBPreprocessBrightThreshold.Text = Properties.Settings.Default.PreprocessBrightThreshold.ToString();
             TBPreprocessTimestampFormat.Text = Properties.Settings.Default.PreprocessTimestampFormat;
+            if (Properties.Settings.Default.PreprocessTimestampFromFormat)
+            {
+                RBPreprocessTimestampFromFormat.IsChecked = true;
+                RBPreprocessTimestampFromFileProperty.IsChecked = false;
+            }
+            else
+            {
+                RBPreprocessTimestampFromFormat.IsChecked = false;
+                RBPreprocessTimestampFromFileProperty.IsChecked = true;
+            }
             TBPreprocessTimes.Text = Properties.Settings.Default.PreprocessTimes;
 
             TBTimelapseEveryNthImage.Text = Properties.Settings.Default.TimelapseEveryNthImage.ToString();
@@ -107,6 +117,7 @@ namespace Timelapse_Creator
             Properties.Settings.Default.PreprocessEveryNthImage = Convert.ToInt32(TBPreprocessEveryNthImage.Text);
             Properties.Settings.Default.PreprocessBrightThreshold = double.Parse(TBPreprocessBrightThreshold.Text.Replace(",", "."), CultureInfo.InvariantCulture);
             Properties.Settings.Default.PreprocessTimestampFormat = TBPreprocessTimestampFormat.Text;
+            Properties.Settings.Default.PreprocessTimestampFromFormat = RBPreprocessTimestampFromFormat.IsChecked ?? true;
             Properties.Settings.Default.PreprocessTimes = TBPreprocessTimes.Text;
 
             Properties.Settings.Default.Save();
@@ -417,6 +428,7 @@ namespace Timelapse_Creator
         {
             string SourceFolder = TBSourceFolder.Text;
             string WorkingFolder = TBWorkingFolder.Text;
+            bool PreprocessTimestampFromFormat = RBPreprocessTimestampFromFormat.IsChecked ?? true;
             string PreprocessTimestampFormat = TBPreprocessTimestampFormat.Text;
             string PreprocessTimes = TBPreprocessTimes.Text;
 
@@ -424,6 +436,7 @@ namespace Timelapse_Creator
                 Preprocessor.PreprocessTime(
                     SourceFolder,
                     WorkingFolder,
+                    PreprocessTimestampFromFormat,
                     PreprocessTimestampFormat,
                     PreprocessTimes
                     ));
