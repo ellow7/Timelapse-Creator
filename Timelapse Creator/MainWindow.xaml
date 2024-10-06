@@ -6,18 +6,30 @@
         xmlns:local="clr-namespace:Timelapse_Creator"
         mc:Ignorable="d"
         Title="Timelapse Creator" Height="869" Width="1187" FontFamily="Consolas" Icon="/android-chrome-512x512.png">
+    <Window.Resources>
+        <local:DoubleToStringConverter x:Key="DoubleToStringConverter" />
+    </Window.Resources>
     <DockPanel Margin="10">
         <StackPanel>
             <StackPanel>
                 <Label Content="Where we working boss?" FontSize="20" FontWeight="Bold"/>
                 <DockPanel>
+                    <Label Content="Preset:" Width="120"/>
+                    <ComboBox x:Name="CBPreset" Width="145" SelectionChanged="CBPreset_SelectionChanged">
+                        <ComboBoxItem Content="Standard" IsSelected="True"/>
+                    </ComboBox>
+                    <Button x:Name="BTSavePreset" Width="35" Content="save" ToolTip="Browse for the source folder" Click="BTSavePreset_Click"/>
+                    <Button x:Name="BTAddPreset" Width="35" Content="add" ToolTip="Browse for the source folder" Click="BTAddPreset_Click"/>
+                    <Button x:Name="BTDeletePreset" Width="35" Content="del" Click="BTDeletePreset_Click" ToolTip="Browse for the source folder"/>
+                </DockPanel>
+                <DockPanel>
                     <Label Content="Source Folder:" Width="120"/>
-                    <TextBox x:Name="TBSourceFolder" Text="C:/Timelapse" Width="200" TextChanged="TBPreprocessSourceFolder_TextChanged" ToolTip="Source folder of all the images. Only *.jpg are used." />
+                    <TextBox x:Name="TBSourceFolder" Text="{Binding SourceFolder, Mode=TwoWay}"  Width="200" TextChanged="TBPreprocessSourceFolder_TextChanged" ToolTip="Source folder of all the images. Only *.jpg are used." />
                     <Button x:Name="BTBrowseSourceFolder" Width="50" Content="browse" Click="BTBrowseSourceFolder_Click" ToolTip="Browse for the source folder"/>
                 </DockPanel>
                 <DockPanel>
                     <Label Content="Working Folder:" Width="120"/>
-                    <TextBox x:Name="TBWorkingFolder" Text="C:/Timelapse_working" Width="200" IsReadOnly="True" Background="LightGray" ToolTip="Here go the preprocessed images"/>
+                    <TextBox x:Name="TBWorkingFolder" Width="200" IsReadOnly="True" Background="LightGray" ToolTip="Here go the preprocessed images"/>
                     <Button x:Name="BTPreprocessOpenWorkingFolder" Content="open" Width="50" Click="BTOpenWorkingFolder_Click" ToolTip="Open the working folder in file explorer"/>
                 </DockPanel>
             </StackPanel>
@@ -26,15 +38,15 @@
                 <Label Content="0) FTP" FontSize="20" FontWeight="Bold"/>
                 <DockPanel>
                     <Label Content="FTP Server:" Width="120"/>
-                    <TextBox x:Name="TBFTPServer" Text="192.168.0.123" Width="250"  ToolTip="FTP Server" />
+                    <TextBox x:Name="TBFTPServer" Text="{Binding FTPServer, Mode=TwoWay}" Width="250"  ToolTip="FTP Server" />
                 </DockPanel>
                 <DockPanel>
                     <Label Content="FTP Basepath:" Width="120"/>
-                    <TextBox x:Name="TBFTPBasepath" Text="/home/ftp/sdcard/Camera1" Width="250"  ToolTip="Relative folder on ther FTP sewrver" />
+                    <TextBox x:Name="TBFTPBasepath" Text="{Binding FTPBasePath, Mode=TwoWay}" Width="250"  ToolTip="Relative folder on ther FTP sewrver" />
                 </DockPanel>
                 <DockPanel>
                     <Label Content="FTP User:" Width="120"/>
-                    <TextBox x:Name="TBFTPUser" Text="admin" Width="250"  ToolTip="Self explainatory :)" />
+                    <TextBox x:Name="TBFTPUser" Text="{Binding FTPUser, Mode=TwoWay}" Width="250"  ToolTip="Self explainatory :)" />
                 </DockPanel>
                 <DockPanel>
                     <Label Content="FTP Pass:" Width="120"/>
@@ -56,11 +68,11 @@
                 <Label Height="20"/>
                 <DockPanel>
                     <Label Content="Bright Threshold:" Width="120"/>
-                    <TextBox x:Name="TBPreprocessBrightThreshold" Text="0.2" Width="250" PreviewTextInput="TextBox_Float_PreviewTextInput" ToolTip="Brightness threshold to filter out too dark images"/>
+                    <TextBox x:Name="TBPreprocessBrightThreshold" Text="{Binding PreprocessBrightThreshold, Converter={StaticResource DoubleToStringConverter}, Mode=TwoWay}" Width="250" PreviewTextInput="TextBox_Float_PreviewTextInput" ToolTip="Brightness threshold to filter out too dark images"/>
                 </DockPanel>
                 <DockPanel>
                     <Label Content="Every Nth Image:" Width="120"/>
-                    <TextBox x:Name="TBPreprocessEveryNthImage" Text="1" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput" ToolTip="Only every nth image gets used. (e.g. every 5th image)"/>
+                    <TextBox x:Name="TBPreprocessEveryNthImage" Text="{Binding PreprocessEveryNthImage, Mode=TwoWay}" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput" ToolTip="Only every nth image gets used. (e.g. every 5th image)"/>
                 </DockPanel>
                 <DockPanel>
                     <Button x:Name="BTPreprocessPreprocessCount" Content="Preprocess by Counting" Padding="3" Click="BTPreprocessPreprocessCount_Click" ToolTip="Start the preprocessing of the source folder"/>
@@ -68,16 +80,16 @@
                 <Label Height="20"/>
                 <DockPanel>
                     <Label Content="Timestamp From:" Width="120"/>
-                    <RadioButton x:Name="RBPreprocessTimestampFromFormat" GroupName="timestamp from" VerticalAlignment="Center" IsChecked="True">Format</RadioButton>
-                    <RadioButton x:Name="RBPreprocessTimestampFromFileProperty" GroupName="timestamp from" VerticalAlignment="Center">File Property</RadioButton>
+                    <RadioButton x:Name="RBPreprocessTimestampFromFormat" GroupName="timestamp from" VerticalAlignment="Center" IsChecked="{Binding PreprocessTimestampFromFormat, Mode=TwoWay}">Format</RadioButton>
+                    <RadioButton x:Name="RBPreprocessTimestampFromFileProperty" GroupName="timestamp from" VerticalAlignment="Center" IsChecked="{Binding PreprocessTimestampFromFileProperty, Mode=TwoWay}">File Property</RadioButton>
                 </DockPanel>
                 <DockPanel>
                     <Label Content="Timestamp Format:" Width="120"/>
-                    <TextBox x:Name="TBPreprocessTimestampFormat" Text="yyyy-MM-dd.HH-mm-ss" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput" ToolTip="Timestamp format of the filenames"/>
+                    <TextBox x:Name="TBPreprocessTimestampFormat" Text="{Binding PreprocessTimestampFormat, Mode=TwoWay}" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput" ToolTip="Timestamp format of the filenames"/>
                 </DockPanel>
                 <DockPanel>
                     <Label Content="Times:" Width="120"/>
-                    <TextBox x:Name="TBPreprocessTimes" Text="09:00;15:00" Width="250" ToolTip="Times of the day that get selected for the Timelapse" />
+                    <TextBox x:Name="TBPreprocessTimes" Text="{Binding PreprocessTimes, Mode=TwoWay}" Width="250" ToolTip="Times of the day that get selected for the Timelapse" />
                 </DockPanel>
                 <DockPanel>
                     <Button x:Name="BTPreprocessPreprocessTime" Content="Preprocess by Time of the Day" Padding="3" Click="BTPreprocessPreprocessTime_Click" ToolTip="Start the preprocessing of the source folder"/>
@@ -93,19 +105,19 @@
                 </DockPanel>
                 <DockPanel>
                     <Label Content="Every Nth Image:" Width="120"/>
-                    <TextBox x:Name="TBTimelapseEveryNthImage" Text="100" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput" ToolTip="Only every nth image gets used. (e.g. every 5th image)"/>
+                    <TextBox x:Name="TBTimelapseEveryNthImage" Text="{Binding TimelapseEveryNthImage, Mode=TwoWay}" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput" ToolTip="Only every nth image gets used. (e.g. every 5th image)"/>
                 </DockPanel>
                 <DockPanel>
                     <Label Content="Resolution X:" Width="120"/>
-                    <TextBox x:Name="TBTimelapseResolutionX" Text="1920" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput" ToolTip="X Resolution of the timelapse"/>
+                    <TextBox x:Name="TBTimelapseResolutionX" Text="{Binding TimelapseResolutionX, Mode=TwoWay}" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput" ToolTip="X Resolution of the timelapse"/>
                 </DockPanel>
                 <DockPanel>
                     <Label Content="Resolution Y:" Width="120"/>
-                    <TextBox x:Name="TBTimelapseResolutionY" Text="1080" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput" ToolTip="Y Resolution of the timelapse"/>
+                    <TextBox x:Name="TBTimelapseResolutionY" Text="{Binding TimelapseResolutionY, Mode=TwoWay}" Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput" ToolTip="Y Resolution of the timelapse"/>
                 </DockPanel>
                 <DockPanel>
                     <Label Content="FPS:" Width="120"/>
-                    <TextBox x:Name="TBTimelapseFPS" Text="60"  Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput" ToolTip="Frames per second of the timelapse"/>
+                    <TextBox x:Name="TBTimelapseFPS" Text="{Binding TimelapseFPS, Mode=TwoWay}"  Width="250" PreviewTextInput="TextBox_Int_PreviewTextInput" ToolTip="Frames per second of the timelapse"/>
                 </DockPanel>
                 <DockPanel>
                     <Button x:Name="BTTimelapseCreateTimelapse" Content="Create Timelapse" Padding="3" Click="BTTimelapseCreateTimelapse_Click" ToolTip="Start the creation of the timelapse from the images of the working folder"/>

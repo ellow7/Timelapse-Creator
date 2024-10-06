@@ -28,6 +28,8 @@ using System.Globalization;
 using System.Net;
 using Renci.SshNet;
 using System.Security.Policy;
+using System.Collections.ObjectModel;
+using System.Xml.Serialization;
 
 namespace Timelapse_Creator
 {
@@ -36,12 +38,15 @@ namespace Timelapse_Creator
     /// </summary>
     public partial class MainWindow : Window
     {
-        System.Timers.Timer LogTimer;
+        private System.Timers.Timer LogTimer;
+        private Settings Settings { get; set; }
         public MainWindow()
         {
             InitializeComponent();
 
-            LoadSettings();
+            Settings = new Settings();
+            this.DataContext = Settings; // Set the DataContext to the Settings instance
+            LoadPreset(Properties.Settings.Default.Preset);
 
             LogTimer = new System.Timers.Timer(500);
             LogTimer.Elapsed += LogTimer_Elapsed;
@@ -50,90 +55,80 @@ namespace Timelapse_Creator
             Log("Started");
         }
 
-        #region Settings
+        #region Presets (Settings)
+        private void PopulatePresetCombobox()
+        {
+            try { CBPreset.Items.Clear(); } catch { }//clear items
+            CBPreset.ItemsSource = null;//clear items
+
+            CBPreset.ItemsSource = Settings.GetSavedPresets();
+        }
         /// <summary>
         /// Load settings and apply them to the controls.
         /// </summary>
-        private void LoadSettings()
+        private void LoadPreset(string Preset)
         {
-            TBSourceFolder.Text = Properties.Settings.Default.SourceFolder;
+            PopulatePresetCombobox();
 
-            TBFTPServer.Text = Properties.Settings.Default.FTPServer;
-            TBFTPBasepath.Text = Properties.Settings.Default.FTPBasePath;
-            TBFTPUser.Text = Properties.Settings.Default.FTPUser;
-            PBFTPPass.Password = Properties.Settings.Default.FTPPassword;
+            CBPreset.SelectionChanged -= CBPreset_SelectionChanged;// Unsubscribe from the event to prevent it from firing
+            CBPreset.SelectedItem = Preset;
+            CBPreset.SelectionChanged += CBPreset_SelectionChanged;// Re-subscribe to the event after the selection is changed
 
-            TBPreprocessEveryNthImage.Text = Properties.Settings.Default.PreprocessEveryNthImage.ToString();
-            TBPreprocessBrightThreshold.Text = Properties.Settings.Default.PreprocessBrightThreshold.ToString();
-            TBPreprocessTimestampFormat.Text = Properties.Settings.Default.PreprocessTimestampFormat;
-            if (Properties.Settings.Default.PreprocessTimestampFromFormat)
-            {
-                RBPreprocessTimestampFromFormat.IsChecked = true;
-                RBPreprocessTimestampFromFileProperty.IsChecked = false;
-            }
-            else
-            {
-                RBPreprocessTimestampFromFormat.IsChecked = false;
-                RBPreprocessTimestampFromFileProperty.IsChecked = true;
-            }
-            TBPreprocessTimes.Text = Properties.Settings.Default.PreprocessTimes;
+            #region Restore settings from selected preset
+            Settings.Load(Preset);
+            PBFTPPass.Password = Settings.FTPPassword;//not bindable...
+            #endregion
 
-            TBTimelapseEveryNthImage.Text = Properties.Settings.Default.TimelapseEveryNthImage.ToString();
-            TBTimelapseResolutionX.Text = Properties.Settings.Default.TimelapseResolutionX.ToString();
-            TBTimelapseResolutionY.Text = Properties.Settings.Default.TimelapseResolutionY.ToString();
-            TBTimelapseFPS.Text = Properties.Settings.Default.TimelapseFPS.ToString();
+            Properties.Settings.Default.Preset = Preset;//save selected preset for next use
+            Properties.Settings.Default.Save();
+
+            Log($"Preset {Preset} loaded.");
         }
         /// <summary>
         /// Save settings from the controls to the settings.
         /// </summary>
-        private void SaveFTPSettings()
+        private void SavePreset(string Preset)
         {
-            Properties.Settings.Default.SourceFolder = TBSourceFolder.Text;
-            Properties.Settings.Default.FTPServer = TBFTPServer.Text;
-            Properties.Settings.Default.FTPBasePath = TBFTPBasepath.Text;
-            Properties.Settings.Default.FTPUser = TBFTPUser.Text;
+            Settings.FTPPassword = PBFTPPass.Password;//not bindable...
+            Settings.Save(Preset);
 
-            if (Properties.Settings.Default.FTPPassword != null && Properties.Settings.Default.FTPPassword != "")//already saved a pw, now save it without dialog
-            {
-                Properties.Settings.Default.FTPPassword = PBFTPPass.Password;
-            }
-            else
-            {
-                var res = MessageBox.Show("Save password for FTP server in clear text?\r\nThis software will remember your choice and only ask once.", "Save password?", MessageBoxButton.YesNo, MessageBoxImage.Question);//someone can implement some kind of encryption if they want to
-                if (res == MessageBoxResult.Yes)
-                {
-                    Properties.Settings.Default.FTPPassword = PBFTPPass.Password;
-                }
-            }
-
-            Properties.Settings.Default.Save();
+            Log($"Preset {Preset} saved.");
         }
-        /// <summary>
-        /// Save settings from the controls to the settings.
-        /// </summary>
-        private void SavePreprocessSettings()
-        {
-            Properties.Settings.Default.SourceFolder = TBSourceFolder.Text;
-            Properties.Settings.Default.PreprocessEveryNthImage = Convert.ToInt32(TBPreprocessEveryNthImage.Text);
-            Properties.Settings.Default.PreprocessBrightThreshold = double.Parse(TBPreprocessBrightThreshold.Text.Replace(",", "."), CultureInfo.InvariantCulture);
-            Properties.Settings.Default.PreprocessTimestampFormat = TBPreprocessTimestampFormat.Text;
-            Properties.Settings.Default.PreprocessTimestampFromFormat = RBPreprocessTimestampFromFormat.IsChecked ?? true;
-            Properties.Settings.Default.PreprocessTimes = TBPreprocessTimes.Text;
 
-            Properties.Settings.Default.Save();
+        private void CBPreset_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            string selectedPreset = CBPreset.SelectedItem as string;
+            if (!string.IsNullOrEmpty(selectedPreset))
+                LoadPreset(selectedPreset);
         }
-        /// <summary>
-        /// Save settings from the controls to the settings.
-        /// </summary>
-        private void SaveTimelapseSettings()
-        {
-            Properties.Settings.Default.SourceFolder = TBSourceFolder.Text;
-            Properties.Settings.Default.TimelapseEveryNthImage = Convert.ToInt32(TBTimelapseEveryNthImage.Text);
-            Properties.Settings.Default.TimelapseResolutionX = Convert.ToInt32(TBTimelapseResolutionX.Text);
-            Properties.Settings.Default.TimelapseResolutionY = Convert.ToInt32(TBTimelapseResolutionY.Text);
-            Properties.Settings.Default.TimelapseFPS = Convert.ToInt32(TBTimelapseFPS.Text);
 
-            Properties.Settings.Default.Save();
+        private void BTSavePreset_Click(object sender, RoutedEventArgs e)
+        {
+            SavePreset(CBPreset.SelectedItem as string);
+
+            Log($"Preset {CBPreset.SelectedItem as string} saved.");
+        }
+        private void BTAddPreset_Click(object sender, RoutedEventArgs e)
+        {
+            var newPreset = ShowInputDialog("Please enter the new name:");
+            SavePreset(newPreset);
+            PopulatePresetCombobox();
+            CBPreset.SelectedItem = newPreset;
+
+            Log($"Preset {newPreset} added.");
+        }
+        private void BTDeletePreset_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBoxResult result = MessageBox.Show($"Are you sure you want to delete '{CBPreset.SelectedItem as string}'?", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+            // Check the result
+            if (result == MessageBoxResult.No)
+                return;
+
+            Settings.Delete(CBPreset.SelectedItem as string);
+            PopulatePresetCombobox();
+
+            Log($"Preset {CBPreset.SelectedItem as string} deleted.");
         }
         #endregion
 
@@ -198,8 +193,6 @@ namespace Timelapse_Creator
                     SourceFolder
                     ));
             t.Start();
-
-            SaveFTPSettings();
         }
         private void DownloadFTPFiles(string ftpHost, string ftpUser, string ftpPassword, string remoteBasePath, string localBasePath)
         {
@@ -302,8 +295,6 @@ namespace Timelapse_Creator
                     SourceFolder
                     ));
             t.Start();
-
-            SaveFTPSettings();
         }
         private void DownloadSFTPFiles(string sftpHost, string sftpUser, string sftpPassword, string remoteBasePath, string localBasePath)
         {
@@ -393,14 +384,14 @@ namespace Timelapse_Creator
             cofd.Multiselect = false;
             cofd.EnsurePathExists = true;
             cofd.RestoreDirectory = false;
-            if (Properties.Settings.Default.SourceFolder != "")
-                cofd.DefaultDirectory = Properties.Settings.Default.SourceFolder;
+            if (Settings.SourceFolder != "")
+                cofd.DefaultDirectory = Settings.SourceFolder;
             else
                 cofd.DefaultDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
             if (cofd.ShowDialog() == CommonFileDialogResult.Ok)
             {
-                TBSourceFolder.Text = cofd.FileName;
+                Settings.SourceFolder = cofd.FileName;
             }
         }
         private void BTPreprocessPreprocessCount_Click(object sender, RoutedEventArgs e)
@@ -420,8 +411,6 @@ namespace Timelapse_Creator
                     BrightThreshold
                     ));
             t.Start();
-
-            SavePreprocessSettings();
         }
 
         private void BTPreprocessPreprocessTime_Click(object sender, RoutedEventArgs e)
@@ -441,8 +430,6 @@ namespace Timelapse_Creator
                     PreprocessTimes
                     ));
             t.Start();
-
-            SavePreprocessSettings();
         }
         #endregion
 
@@ -466,8 +453,6 @@ namespace Timelapse_Creator
                     FPS
                     ));
             t.Start();
-
-            SaveTimelapseSettings();
         }
 
         private void BTTimelapseOpenTimelapse_Click(object sender, RoutedEventArgs e)
@@ -489,6 +474,55 @@ namespace Timelapse_Creator
         #endregion
 
         #region 3) Helper
+        private string ShowInputDialog(string message)
+        {
+            // Create a new Window for input
+            Window inputDialog = new Window
+            {
+                Title = "Input",
+                Width = 300,
+                Height = 150,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                Owner = this,
+                WindowStyle = WindowStyle.ToolWindow,
+                Content = new StackPanel
+                {
+                    Margin = new Thickness(10),
+                    Children =
+            {
+                new TextBlock { Text = message, Margin = new Thickness(0, 0, 0, 10) },
+                new TextBox { Name = "InputTextBox", Margin = new Thickness(0, 0, 0, 10) },
+                new Button
+                {
+                    Content = "OK",
+                    IsDefault = true,
+                    Margin = new Thickness(0, 5, 0, 0),
+                    Width = 75,
+                }
+            }
+                }
+            };
+
+            // Get the TextBox to read its value later
+            TextBox inputTextBox = (TextBox)((StackPanel)inputDialog.Content).Children[1];
+
+            // Button click event handler
+            ((Button)((StackPanel)inputDialog.Content).Children[2]).Click += (s, e) =>
+            {
+                inputDialog.DialogResult = true; // Set dialog result to true
+                inputDialog.Close(); // Close the dialog
+            };
+
+            // Show dialog modally
+            inputDialog.Loaded += (s, e) =>
+            {
+                inputTextBox.Focus(); // Set focus to the TextBox
+                inputTextBox.SelectAll(); // Select all text in the TextBox
+            };
+            inputDialog.ShowDialog();
+
+            return inputTextBox.Text; // Return the input value
+        }
         private void BTOpenWorkingFolder_Click(object sender, RoutedEventArgs e)
         {
             var folder = TBWorkingFolder.Text;
@@ -514,11 +548,27 @@ namespace Timelapse_Creator
         }
         private void TextBox_Float_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            System.Text.RegularExpressions.Regex regex = new System.Text.RegularExpressions.Regex("^[,][0-9]+$|^[0-9]*[,]{0,1}[0-9]*$");
+            System.Text.RegularExpressions.Regex regex = new System.Text.RegularExpressions.Regex("^[.][0-9]+$|^[0-9]*[.]{0,1}[0-9]*$");
             e.Handled = !regex.IsMatch((sender as TextBox).Text.Insert((sender as TextBox).SelectionStart, e.Text));
-
         }
         #endregion
 
+
+    }
+    public class DoubleToStringConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return value?.ToString();
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (double.TryParse(value as string, NumberStyles.Any, CultureInfo.InvariantCulture, out var result))
+            {
+                return result;
+            }
+            return 0.0; // Default value if parsing fails
+        }
     }
 }
